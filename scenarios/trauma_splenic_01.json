@@ -1,0 +1,64 @@
+{
+  "schema_version": "1.0",
+  "id": "trauma_splenic_01",
+  "title": "Abdominal trauma: active splenic hemorrhage",
+  "mode": "learning",
+  "pulse_revision": "e8a36497b8ba78e788dc201a6baf74e1c297c56f",
+  "patient": {
+    "template": "adult_male_standard"
+  },
+  "pathology": {
+    "existing_internal_hemorrhage": {
+      "compartment": "Spleen",
+      "flow_rate_ml_min": 60.0
+    }
+  },
+  "learning_objectives": [
+    "identify_deterioration",
+    "suspect_internal_bleeding",
+    "request_fast",
+    "begin_resuscitation",
+    "reassess"
+  ],
+  "history": {
+    "allowed_intents": [
+      "PAIN_ONSET",
+      "PAIN_LOCATION",
+      "MECHANISM_OF_INJURY",
+      "SUSPECT_INTERNAL_BLEEDING"
+    ]
+  },
+  "observations": {
+    "fast": {
+      "enabled": true,
+      "controlled_finding": "free_fluid_positive"
+    }
+  },
+  "interventions": {
+    "allowed": [
+      {
+        "id": "crystalloid_saline",
+        "pulse_compound": "Saline",
+        "volume_ml": 500.0,
+        "rate_ml_min": 100.0
+      },
+      {
+        "id": "blood_packed_rbc",
+        "pulse_compound": "PackedRBC",
+        "volume_ml": 250.0,
+        "rate_ml_min": 5.0
+      }
+    ]
+  },
+  "telemetry": [
+    "heart_rate_bpm",
+    "mean_arterial_pressure_mmhg",
+    "blood_volume_ml",
+    "total_hemorrhaged_volume_ml",
+    "oxygen_saturation"
+  ],
+  "completion": {
+    "success_rules": [],
+    "failure_rules": []
+  }
+}

@@ -1,0 +1,469 @@
+{
+  "purpose": "Engineering-only S0 runtime demonstration; not medical advice or assessment.",
+  "scenario_id": "trauma_splenic_01",
+  "runtime_state": "COMPLETED",
+  "adapter_engine_version": "deterministic-test-double/1.0",
+  "event_count": 18,
+  "snapshot_count": 8,
+  "events": [
+    {
+      "event_id": "evt-000001",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 0.0,
+      "event_type": "snapshot.published",
+      "actor": "runtime",
+      "payload": {
+        "snapshot_id": "snp-000001",
+        "reason": "scenario_started"
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000002",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 0.0,
+      "event_type": "clinical.intent.recorded",
+      "actor": "learner",
+      "payload": {
+        "command_id": "cmd-000001",
+        "intent_id": "MECHANISM_OF_INJURY"
+      },
+      "source": "scenario_runtime",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000003",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 0.0,
+      "event_type": "observation.requested",
+      "actor": "learner",
+      "payload": {
+        "command_id": "cmd-000002",
+        "observation_id": "VITALS"
+      },
+      "source": "scenario_runtime",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000004",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 60.0,
+      "event_type": "clock.advanced",
+      "actor": "learner",
+      "payload": {
+        "command_id": "cmd-000003",
+        "duration_s": 60.0
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000005",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 60.0,
+      "event_type": "snapshot.published",
+      "actor": "runtime",
+      "payload": {
+        "snapshot_id": "snp-000002",
+        "reason": "time_advanced"
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000006",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 60.0,
+      "event_type": "observation.requested",
+      "actor": "learner",
+      "payload": {
+        "command_id": "cmd-000004",
+        "observation_id": "FAST"
+      },
+      "source": "scenario_runtime",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000007",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 60.0,
+      "event_type": "intervention.applied",
+      "actor": "learner",
+      "payload": {
+        "command_id": "cmd-000005",
+        "intervention_id": "crystalloid_saline",
+        "compound": "Saline",
+        "volume_ml": 500.0,
+        "rate_ml_min": 100.0
+      },
+      "source": "physiology_adapter",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000008",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 60.0,
+      "event_type": "snapshot.published",
+      "actor": "runtime",
+      "payload": {
+        "snapshot_id": "snp-000003",
+        "reason": "intervention_applied"
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000009",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 180.0,
+      "event_type": "clock.advanced",
+      "actor": "learner",
+      "payload": {
+        "command_id": "cmd-000006",
+        "duration_s": 120.0
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000010",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 180.0,
+      "event_type": "snapshot.published",
+      "actor": "runtime",
+      "payload": {
+        "snapshot_id": "snp-000004",
+        "reason": "time_advanced"
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000011",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 180.0,
+      "event_type": "checkpoint.created",
+      "actor": "learner",
+      "payload": {
+        "command_id": "cmd-000007",
+        "checkpoint_id": "after_initial_resuscitation"
+      },
+      "source": "physiology_adapter",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000012",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 180.0,
+      "event_type": "snapshot.published",
+      "actor": "runtime",
+      "payload": {
+        "snapshot_id": "snp-000005",
+        "reason": "checkpoint:after_initial_resuscitation"
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000013",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 240.0,
+      "event_type": "clock.advanced",
+      "actor": "learner",
+      "payload": {
+        "command_id": "cmd-000008",
+        "duration_s": 60.0
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000014",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 240.0,
+      "event_type": "snapshot.published",
+      "actor": "runtime",
+      "payload": {
+        "snapshot_id": "snp-000006",
+        "reason": "time_advanced"
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000015",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 180.0,
+      "event_type": "checkpoint.restored",
+      "actor": "learner",
+      "payload": {
+        "command_id": "cmd-000009",
+        "checkpoint_id": "after_initial_resuscitation"
+      },
+      "source": "physiology_adapter",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000016",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 180.0,
+      "event_type": "snapshot.published",
+      "actor": "runtime",
+      "payload": {
+        "snapshot_id": "snp-000007",
+        "reason": "checkpoint_restored:after_initial_resuscitation"
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000017",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 240.0,
+      "event_type": "clock.advanced",
+      "actor": "learner",
+      "payload": {
+        "command_id": "cmd-000010",
+        "duration_s": 60.0
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    },
+    {
+      "event_id": "evt-000018",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 240.0,
+      "event_type": "snapshot.published",
+      "actor": "runtime",
+      "payload": {
+        "snapshot_id": "snp-000008",
+        "reason": "time_advanced"
+      },
+      "source": "vpe_core",
+      "schema_version": "1.0"
+    }
+  ],
+  "snapshots": [
+    {
+      "snapshot_id": "snp-000001",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 0.0,
+      "engine_version": "deterministic-test-double/1.0",
+      "telemetry": {
+        "heart_rate_bpm": 72.0,
+        "mean_arterial_pressure_mmhg": 95.3,
+        "blood_volume_ml": 5489.0,
+        "total_hemorrhaged_volume_ml": 0.0,
+        "oxygen_saturation": 0.974
+      },
+      "adapter_state": {
+        "engine_version": "deterministic-test-double/1.0",
+        "time_s": 0.0,
+        "blood_volume_ml": 5489.0,
+        "hemorrhage_flow_ml_s": 1.0,
+        "total_hemorrhage_ml": 0.0,
+        "infusions": [],
+        "bootstrapped": true
+      },
+      "reason": "scenario_started"
+    },
+    {
+      "snapshot_id": "snp-000002",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 60.0,
+      "engine_version": "deterministic-test-double/1.0",
+      "telemetry": {
+        "heart_rate_bpm": 73.3117,
+        "mean_arterial_pressure_mmhg": 94.9721,
+        "blood_volume_ml": 5429.0,
+        "total_hemorrhaged_volume_ml": 60.0,
+        "oxygen_saturation": 0.973453
+      },
+      "adapter_state": {
+        "engine_version": "deterministic-test-double/1.0",
+        "time_s": 60.0,
+        "blood_volume_ml": 5429.0,
+        "hemorrhage_flow_ml_s": 1.0,
+        "total_hemorrhage_ml": 60.0,
+        "infusions": [],
+        "bootstrapped": true
+      },
+      "reason": "time_advanced"
+    },
+    {
+      "snapshot_id": "snp-000003",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 60.0,
+      "engine_version": "deterministic-test-double/1.0",
+      "telemetry": {
+        "heart_rate_bpm": 73.3117,
+        "mean_arterial_pressure_mmhg": 94.9721,
+        "blood_volume_ml": 5429.0,
+        "total_hemorrhaged_volume_ml": 60.0,
+        "oxygen_saturation": 0.973453
+      },
+      "adapter_state": {
+        "engine_version": "deterministic-test-double/1.0",
+        "time_s": 60.0,
+        "blood_volume_ml": 5429.0,
+        "hemorrhage_flow_ml_s": 1.0,
+        "total_hemorrhage_ml": 60.0,
+        "infusions": [
+          {
+            "compound": "Saline",
+            "remaining_ml": 500.0,
+            "rate_ml_min": 100.0
+          }
+        ],
+        "bootstrapped": true
+      },
+      "reason": "intervention_applied"
+    },
+    {
+      "snapshot_id": "snp-000004",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 180.0,
+      "engine_version": "deterministic-test-double/1.0",
+      "telemetry": {
+        "heart_rate_bpm": 75.9351,
+        "mean_arterial_pressure_mmhg": 94.3162,
+        "blood_volume_ml": 5509.0,
+        "total_hemorrhaged_volume_ml": 180.0,
+        "oxygen_saturation": 0.97236
+      },
+      "adapter_state": {
+        "engine_version": "deterministic-test-double/1.0",
+        "time_s": 180.0,
+        "blood_volume_ml": 5509.000000000036,
+        "hemorrhage_flow_ml_s": 1.0,
+        "total_hemorrhage_ml": 180.0,
+        "infusions": [
+          {
+            "compound": "Saline",
+            "remaining_ml": 299.9999999999977,
+            "rate_ml_min": 100.0
+          }
+        ],
+        "bootstrapped": true
+      },
+      "reason": "time_advanced"
+    },
+    {
+      "snapshot_id": "snp-000005",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 180.0,
+      "engine_version": "deterministic-test-double/1.0",
+      "telemetry": {
+        "heart_rate_bpm": 75.9351,
+        "mean_arterial_pressure_mmhg": 94.3162,
+        "blood_volume_ml": 5509.0,
+        "total_hemorrhaged_volume_ml": 180.0,
+        "oxygen_saturation": 0.97236
+      },
+      "adapter_state": {
+        "engine_version": "deterministic-test-double/1.0",
+        "time_s": 180.0,
+        "blood_volume_ml": 5509.000000000036,
+        "hemorrhage_flow_ml_s": 1.0,
+        "total_hemorrhage_ml": 180.0,
+        "infusions": [
+          {
+            "compound": "Saline",
+            "remaining_ml": 299.9999999999977,
+            "rate_ml_min": 100.0
+          }
+        ],
+        "bootstrapped": true
+      },
+      "reason": "checkpoint:after_initial_resuscitation"
+    },
+    {
+      "snapshot_id": "snp-000006",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 240.0,
+      "engine_version": "deterministic-test-double/1.0",
+      "telemetry": {
+        "heart_rate_bpm": 77.2469,
+        "mean_arterial_pressure_mmhg": 93.9883,
+        "blood_volume_ml": 5549.0,
+        "total_hemorrhaged_volume_ml": 240.0,
+        "oxygen_saturation": 0.971814
+      },
+      "adapter_state": {
+        "engine_version": "deterministic-test-double/1.0",
+        "time_s": 240.0,
+        "blood_volume_ml": 5549.000000000055,
+        "hemorrhage_flow_ml_s": 1.0,
+        "total_hemorrhage_ml": 240.0,
+        "infusions": [
+          {
+            "compound": "Saline",
+            "remaining_ml": 199.99999999999756,
+            "rate_ml_min": 100.0
+          }
+        ],
+        "bootstrapped": true
+      },
+      "reason": "time_advanced"
+    },
+    {
+      "snapshot_id": "snp-000007",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 180.0,
+      "engine_version": "deterministic-test-double/1.0",
+      "telemetry": {
+        "heart_rate_bpm": 75.9351,
+        "mean_arterial_pressure_mmhg": 94.3162,
+        "blood_volume_ml": 5509.0,
+        "total_hemorrhaged_volume_ml": 180.0,
+        "oxygen_saturation": 0.97236
+      },
+      "adapter_state": {
+        "engine_version": "deterministic-test-double/1.0",
+        "time_s": 180.0,
+        "blood_volume_ml": 5509.000000000036,
+        "hemorrhage_flow_ml_s": 1.0,
+        "total_hemorrhage_ml": 180.0,
+        "infusions": [
+          {
+            "compound": "Saline",
+            "remaining_ml": 299.9999999999977,
+            "rate_ml_min": 100.0
+          }
+        ],
+        "bootstrapped": true
+      },
+      "reason": "checkpoint_restored:after_initial_resuscitation"
+    },
+    {
+      "snapshot_id": "snp-000008",
+      "scenario_id": "trauma_splenic_01",
+      "simulation_time_s": 240.0,
+      "engine_version": "deterministic-test-double/1.0",
+      "telemetry": {
+        "heart_rate_bpm": 77.2469,
+        "mean_arterial_pressure_mmhg": 93.9883,
+        "blood_volume_ml": 5549.0,
+        "total_hemorrhaged_volume_ml": 240.0,
+        "oxygen_saturation": 0.971814
+      },
+      "adapter_state": {
+        "engine_version": "deterministic-test-double/1.0",
+        "time_s": 240.0,
+        "blood_volume_ml": 5549.000000000055,
+        "hemorrhage_flow_ml_s": 1.0,
+        "total_hemorrhage_ml": 240.0,
+        "infusions": [
+          {
+            "compound": "Saline",
+            "remaining_ml": 199.99999999999756,
+            "rate_ml_min": 100.0
+          }
+        ],
+        "bootstrapped": true
+      },
+      "reason": "time_advanced"
+    }
+  ]
+}

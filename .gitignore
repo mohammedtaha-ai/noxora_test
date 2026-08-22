@@ -11,6 +11,7 @@ credentials*
 
 # Python
 __pycache__/
+.build/
 *.py[cod]
 *.egg-info/
 .venv/

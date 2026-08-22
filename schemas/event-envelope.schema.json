@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexora-vpe.local/schemas/event-envelope.schema.json",
+  "title": "Nexora VPE Event Envelope",
+  "description": "Versioned, formative-learning event envelope. It contains no patient-specific clinical recommendation or high-stakes score.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "scenario_id",
+    "simulation_time_s",
+    "event_type",
+    "actor",
+    "payload",
+    "source",
+    "schema_version"
+  ],
+  "properties": {
+    "event_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$" },
+    "scenario_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$" },
+    "simulation_time_s": { "type": "number", "minimum": 0 },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "clock.advanced",
+        "clinical.intent.recorded",
+        "observation.requested",
+        "intervention.applied",
+        "snapshot.published",
+        "checkpoint.created",
+        "checkpoint.restored",
+        "fast.acquisition.recorded",
+        "escalation.recorded"
+      ]
+    },
+    "actor": { "type": "string", "enum": ["learner", "runtime", "scenario", "system"] },
+    "payload": { "type": "object" },
+    "source": { "type": "string", "enum": ["vpe_core", "physiology_adapter", "scenario_runtime", "future_fast_resolver"] },
+    "schema_version": { "type": "string", "const": "1.0" }
+  }
+}

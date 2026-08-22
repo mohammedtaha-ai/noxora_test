@@ -1,0 +1,39 @@
+{
+  "purpose": "Engineering-only Pulse SDK bridge probe; not clinical advice.",
+  "pulse_version": "4.3.2",
+  "pulse_hash": "e8a3649",
+  "state_file": "./states/StandardMale@0s.json",
+  "snapshot_file": "/home/ubuntu/noxora_test/.build/pulse_bridge/pulse_state.json",
+  "baseline": {
+    "time_s": 0.000000,
+    "heart_rate_bpm": 72.000000,
+    "mean_arterial_pressure_mmhg": 95.323418,
+    "blood_volume_ml": 5488.938779,
+    "total_hemorrhaged_volume_ml": 0.000000,
+    "oxygen_saturation": 0.974125
+  },
+  "before_snapshot": {
+    "time_s": 120.000000,
+    "heart_rate_bpm": 72.831290,
+    "mean_arterial_pressure_mmhg": 95.204874,
+    "blood_volume_ml": 5374.075806,
+    "total_hemorrhaged_volume_ml": 119.980000,
+    "oxygen_saturation": 0.973873
+  },
+  "original_continued": {
+    "time_s": 180.000000,
+    "heart_rate_bpm": 73.990788,
+    "mean_arterial_pressure_mmhg": 94.186237,
+    "blood_volume_ml": 5316.740790,
+    "total_hemorrhaged_volume_ml": 179.980000,
+    "oxygen_saturation": 0.973563
+  },
+  "restored_continued": {
+    "time_s": 180.000000,
+    "heart_rate_bpm": 73.990788,
+    "mean_arterial_pressure_mmhg": 94.186237,
+    "blood_volume_ml": 5316.740790,
+    "total_hemorrhaged_volume_ml": 179.980000,
+    "oxygen_saturation": 0.973563
+  }
+}
