@@ -1,40 +1,55 @@
-# عقد VPE Client Facade — مسودة قبل M3
+# عقد VPE Client Facade — S0 headless قبل Unity
 
-**الحالة:** **PRE-IMPLEMENTATION / REWORK**. تصف هذه الوثيقة العقد الذي يجب أن يعتمده أي عميل Unity مستقبلي؛ لا تعني أن Facade أو Unity منفذان.
+**الحالة:** `IMPLEMENTED_HEADLESS / CLIENT-SAFE TESTED`. لا يعني ذلك أن عميل Unity منفذ أو معتمد.
 
-> الغرض من هذا العقد هو إبقاء VPE مالكًا وحيدًا للزمن وترتيب الأوامر والوصول إلى Pulse. وهو عقد محاكاة تكوينية فقط، وليس بروتوكول علاج أو نظام قرار أو تقييم عالي العواقب.
+> الغرض من العقد إبقاء VPE والـhost المالكين الوحيدين للزمن والطابور والوصول إلى Pulse. هو عقد محاكاة تكوينية فقط، وليس بروتوكول علاج أو نظام قرار أو تقييم عالي العواقب.
 
 ## حدود الواجهة
 
-يتصل العميل مستقبلًا بـVPE Client Facade ضيق. لا يتصل مباشرة بـ`VpeRuntime` الداخلي أو `PulseAdapter` أو Pulse SDK أو ملفات checkpoints. ويستهلك أحداثًا ولقطات آمنة للعرض، لا الحالة الداخلية للمحرك.
+يتصل أي عميل مستقبلي بـ`VpeClientFacade` عبر `LocalFacadeHttpServer` على loopback فقط. لا يصل إلى `VpeRuntime` الداخلي أو `PulseAdapter` أو Pulse SDK أو ملفات checkpoint. لا يعيد Facade snapshot الداخلي أو سيناريو المصدر بالكامل؛ بل ينشئ DTOs صريحة في `client_contracts.py`.
 
-| عملية العميل | العقد المقترح | سلطة العميل | سلطة VPE |
+| DTO | الحقول المسموح بها | محظورات صريحة |
+|---|---|---|
+| `ClientScenarioManifest` | scenario id، عنوان تعليمي، mode، القوائم المسموحة، telemetry المرئية. | pathology، flow rate، Pulse revision، controlled FAST finding، completion. |
+| `ClientRuntimeState` | runtime state وsimulation time. | adapter/Pulse state. |
+| `ClientSnapshot` | snapshot id، scenario id، simulation time، runtime state، HR/MAP/SpO₂. | blood volume، hemorrhaged volume، engine version، reason، checkpoint. |
+| `ClientEvent` | event id/type/time وpayload محدود لكل event type. | actor، source، command metadata الداخلي، compound/volume/rate. |
+| `CommandRequest` | kind/payload/request_id مؤلفة ومتحقق منها. | advance/checkpoint/restore أو payload حر. |
+
+## العمليات
+
+| العملية | المسار المحلي | سلطة العميل | سلطة VPE/Host |
 |---|---|---|---|
-| عرض الحالة | أحدث `Snapshot` وevents منشورة | العرض فقط | نشر لقطة خفيفة ومرتبة. |
-| فعل منظم | `submit(kind, actor, payload, request_id)` | اختيار مصرح به من قاموس السيناريو | التحقق والترتيب والتنفيذ أو الرفض. |
-| نتيجة الطلب | `request_outcome(request_id)` | استعادة outcome معروف | حفظ outcome المقبول داخل الجلسة. |
-| تقدم الزمن | `advance_time` من خلال أمر منظم | طلب مدة مسموحة فقط | الزمن الفعلي وPulse. |
-| checkpoint | أمر صريح فقط | طلب معرف checkpoint | إنشاء artifact محرك أو رفضه. |
+| عرض السيناريو | `GET /v1/scenario` | العرض فقط | إسقاط manifest آمن. |
+| عرض الحالة/اللقطة | `GET /v1/state`, `GET /v1/snapshot` | العرض فقط | نشر حالة VPE وsnapshot آمنين. |
+| قراءة أدلة جديدة | `GET /v1/events?after=` | cursor مرئي فقط | فلترة events والـpayloads. |
+| إرسال فعل | `POST /v1/commands` | اختيار مؤلف فقط | التحقق، ترتيب الطابور، outcome. |
+| استعلام النتيجة | `GET /v1/commands/<request_id>` | قراءة نتيجة موجودة | PENDING/COMPLETED/REJECTED/AMBIGUOUS. |
+| تقدم الزمن | **لا endpoint** | لا يملك العميل clock. | `VpePacedHost` يعالج ثم يتقدم عند 0.5s. |
 
 ## request_id وحماية التكرار
 
-كل طلب عميل يمكن أن يسبب أثرًا أو يؤدي إلى دليل ينبغي أن يحمل `request_id` ثابتًا يطابق النمط `[A-Za-z0-9._:-]{1,128}`. يعمل الفهرس الحالي **داخل جلسة Runtime في الذاكرة فقط**.
+يجب أن يحمل كل فعل عميل `request_id` آمنًا وثابتًا. يعمل الفهرس داخل جلسة Runtime في الذاكرة فقط.
 
-| الحالة | سلوك VPE الحالي | ما يجب أن يفعله العميل |
+| الحالة | السلوك | واجب العميل |
 |---|---|---|
-| `request_id` جديد وصالح | يضع Command واحدًا في الطابور. | يعرض حالة معلقة ثم يطلب النتيجة. |
-| إعادة إرسال متطابقة قبل أو بعد المعالجة | يعيد `command_id` القائم ولا يضيف Command جديدًا. | يستعلم عن `request_outcome`؛ لا ينفذ مرة ثانية. |
-| إعادة استعمال المعرف مع kind/actor/payload مختلف | يرفض الطلب. | ينشئ `request_id` جديدًا لنية جديدة. |
-| request ليس له outcome بعد فشل أو تعذر عملية | يبقى المعرف محجوزًا ولا يعاد تنفيذ الأمر تلقائيًا. | يعامل النتيجة كغامضة ويعرض تعافيًا يدويًا/إعادة تحميل حالة؛ لا يعيد الطلب تلقائيًا. |
+| request جديد صالح | يقبل Facade الطلب ويرجع `command_id` و`ACCEPTED`. | يعرض انتظارًا ثم يستعلم عن outcome. |
+| إعادة إرسال متطابقة | يعاد المعرف/النتيجة ولا ينفذ الأثر مجددًا. | لا ينشئ نية ثانية. |
+| request_id مع دلالات مختلفة | يرفض بـ`DUPLICATE_REQUEST_CONFLICT`. | يستخدم معرفًا جديدًا لنية جديدة. |
+| فشل بعد القبول | outcome `AMBIGUOUS` إن أمكن أن يكون أثر وقع. | لا retry تلقائي؛ يعرض تعافيًا يدويًا/حالة لاحقة. |
 
-**يحظر على العميل إعادة المحاولة تلقائيًا** للأوامر `advance_time` أو `apply_intervention` أو `restore_checkpoint` بعد timeout أو انقطاع عملية أو فشل غامض. قد يكون المحرك طبق الأثر قبل أن يصل الرد. لا يفتح هذا العقد أي distributed transaction ولا يثبت exactly-once عبر إعادة تشغيل Runtime أو نقل شبكة؛ هذه حدود مقصودة لـS0.
+لا يثبت العقد exactly-once عبر النقل أو توقف العملية أو جلسة جديدة. هذه حدود S0 مقصودة.
 
-## بيانات العرض المسموحة
+## الأخطاء والحماية
 
-تتضمن اللقطة الكانونية فقط: `snapshot_id` و`scenario_id` و`simulation_time_s` و`engine_version` وtelemetry المسموح بها وسبب النشر. لا تتضمن `adapter_state` أو مسار state أو digest checkpoint أو رسائل بروتوكول Pulse.
+الأخطاء تعاد كـJSON برموز: `INVALID_COMMAND`، `NOT_ALLOWED`، `INVALID_STATE`، `DUPLICATE_REQUEST_CONFLICT`، `AMBIGUOUS_OUTCOME`، `ENGINE_UNAVAILABLE`، `ENGINE_TIMEOUT`، أو `INTERNAL_ERROR`. لا تعاد stack trace أو مسارات محلية أو سطور Pulse أو state digest.
 
-قائمة الأفعال والملاحظات التي يتلقاها العميل يجب أن تصدر من عقد السيناريو داخل VPE. في S0، `VITALS` قدرة monitor مدمجة، وتكون `FAST` أو `CBC` مؤلفة صراحةً في `observations.allowed`. لا يجب أن ينسخ Unity قائمة hardcoded من نفسه.
+يرتبط النقل بـloopback وtoken محلي قصير العمر. لا يشكل token نظام هوية أو مصادقة إنتاجية أو TLS أو تحكم وصول متعدد المستخدمين.
 
-## ما قبل تنفيذ M3
+## lifecycle
 
-لا يبدأ تنفيذ Facade أو Unity إلا بعد قرار **GO** مستقل يثبت، على الأقل، نقلًا محليًا ضيقًا، DTOs آمنة، خطة lifecycle، مدد تقدم زمن معتمدة، ومراجعة Gate 0 والمحتوى. تبقى FAST المكانية وLLM/debrief والتقييم عالي العواقب خارج هذا العقد.
+يشغل host Facade والنقل ويعالج الأفعال ثم يتقدم clock. إذا تعذر tick ينتقل Runtime إلى `PAUSED_BY_SYSTEM`; لا يتحرك الزمن ولا يطبق catch-up عند الاستئناف. tick المقاس المختار هو 0.5 ثانية في البيئة headless المحلية؛ لا يعمم على Unity أو منصات أخرى.
+
+## الحالة قبل Unity
+
+اختبارات Facade والنقل والـhost تغطي منع تسريب الحقيقة، الأخطاء المنظمة، التكرار، loopback، عدم وجود clock endpoint، الإيقاف النظامي، وعدم catch-up. يبقى Unity play-mode وGate 0 والمراجعة الطبية/التعليمية خارج حالة التنفيذ. لا يبدأ Unity من هذا العقد وحده.

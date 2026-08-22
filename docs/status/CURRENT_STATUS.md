@@ -2,67 +2,64 @@
 
 ## المرحلة الحالية
 
-**المرحلة:** اكتملت Gate A ونواة S0 headless وPulseAdapter الإنتاجي، ثم اكتملت **إعادة عمل عقد Runtime قبل M3**. لا يبدأ Unity في هذه الحزمة.
+**المرحلة:** اكتملت Gate A ونواة S0 headless وPulseAdapter الإنتاجي، ثم تقوية Runtime وحدود العميل قبل Unity. لا يوجد مشروع Unity في هذه الدفعة.
 **الفرع العامل:** `manus/s0-foundation`.
-**البوابات:** Gate A — **اجتياز هندسي مشروط**؛ Gate 0 — **UNTESTED**؛ قرار M3 الحالي — **REWORK**.
 
-> النجاح الهندسي لا يثبت صحة سريرية أو فعالية تعليمية أو جاهزية لتقييم عالي العواقب.
+> النجاح الهندسي المحلي لا يثبت صحة سريرية أو فعالية تعليمية أو صلاحية تقييم عالي العواقب.
+
+## الأحكام المنفصلة الحالية
+
+| البعد | الحكم | التفسير الدقيق |
+|---|---|---|
+| **TECHNICAL M3 READINESS** | **READY** لبدء scaffold Unity محدود ومراجع فقط | Facade وDTOs آمنة، نقل loopback، host paced، tests وbenchmark موجودة. لا يعني أن Unity منفذ أو مُثبت على منصات مستهدفة. |
+| **GATE 0** | **UNTESTED** | توجد حزمة تشغيل وقوالب، ولا توجد جلسات أو مشاركون أو مذكرة قرار مكتملة. |
+| **MEDICAL REVIEW** | **UNVALIDATED** | توجد حزمة مراجعة مستقلة، ولا يوجد رد أو توقيع خارجي موثق. |
+
+لا تتحد هذه الأحكام إلى PASS واحد. لا يبدأ Unity قبل مراجعة Gate 0 والمحتوى ثم قرار صريح لاحق.
 
 ## تم التحقق منه
 
 | البند | الحالة | الدليل |
 |---|---|---|
-| بُني Pulse `stable` محليًا عند `e8a36497b8ba78e788dc201a6baf74e1c297c56f` ويعلن SDK الإصدار `4.3.2`. | **VERIFIED** | [Gate A](../reports/002-pulse-gate-a.md). |
-| ينتج Pulse نزفًا داخليًا طحاليًا، ويرصد معدل النزف وحجمه، ويوقف النزف في السيناريو الفعلي. | **VERIFIED** | [Gate A، §4.1](../reports/002-pulse-gate-a.md#41-النزف-الداخلي-الطحالي). |
-| يقبل Pulse `Saline` و`PackedRBC` في سيناريوهات محلية محددة. | **VERIFIED** | [Gate A، §4.2](../reports/002-pulse-gate-a.md#42-saline-وpackedrbc). |
-| حفظ/استعادة حالة نزف ثم استمرار المسار المختبر. | **VERIFIED** لمسار محدد | [Gate A، §4.3](../reports/002-pulse-gate-a.md#43-استمرارية-الحفظ-والاستعادة) واختبارات Pulse. |
-| اللقطات الكانونية خفيفة ولا تسلسل حالة Pulse. | **VERIFIED** | اختبارات Runtime وPulse في [تقرير إعادة العمل](../reports/005-pre-m3-runtime-hardening-review.md). |
-| checkpoint صريح فقط ينشئ artifact محرك قابلًا للاستعادة داخل الجلسة. | **VERIFIED** | اختبار Pulse فعلي و[benchmark](../../artifacts/benchmarks/pre_m3_runtime_hardening/pulse_client_operation_summary.json). |
-| عند فشل أمر في الطابور تبقى الأوامر اللاحقة منتظرة بالترتيب ولا تختفي. | **VERIFIED** | اختبار `valid → invalid → valid` في [تقرير إعادة العمل](../reports/005-pre-m3-runtime-hardening-review.md). |
-| تحقق Runtime من actor وpayload والقواميس يتم قبل `advance` أو التدخل. | **VERIFIED** للمسارات السالبة المختبرة | لا يتغير Pulse أو الزمن عند actor/payload/intervention غير صالح. |
-| `request_id` المكرر لا يعيد تنفيذ تقدم زمن داخل الجلسة ويستعيد outcome المقبول. | **VERIFIED** داخل الجلسة | اختبارات وحدة وPulse؛ [عقد Facade](../contracts/vpe-client-facade-contract.md). |
-| عقد سيناريو 1.2 يحفظ الحقول المؤلفة ويرفض الحقول غير المدعومة؛ observations من مصدر واحد. | **VERIFIED** | [`s0-scenario.schema.json`](../../schemas/s0-scenario.schema.json) واختبارات parity. |
-| فرضية `INTERNAL_BLEEDING` دليل منظم مستقل عن تاريخ المريض. | **IMPLEMENTED + TESTED** | [جرد التفاعلات](../design/s0-interaction-inventory.md). |
-| شغلت الحزمة الكاملة بعد إعادة العمل. | **VERIFIED** | **26 اختبارًا نجح في 22.934s**، منها 7 اختبارات Pulse SDK فعلية. |
-| benchmark عمليات Pulse الحرجة للعميل بخمس تكرارات. | **VERIFIED** محليًا | [الملخص الخام](../../artifacts/benchmarks/pre_m3_runtime_hardening/pulse_client_operation_summary.json). |
+| Pulse 4.3.2 عند revision `e8a3649…` شُغل محليًا لمسارات S0 المحددة. | **VERIFIED** | [Gate A](../reports/002-pulse-gate-a.md) ومصفوفة ما بعد Gate A. |
+| Canonical snapshots خفيفة؛ checkpoint صريح فقط ينشئ artifact محرك داخل الجلسة. | **VERIFIED** للمسارات المختبرة | [مراجعة Runtime](../reports/005-pre-m3-runtime-hardening-review.md). |
+| فشل الطابور يحتفظ بالأوامر اللاحقة؛ يتحقق Runtime قبل أثر Pulse؛ `request_id` يمنع التكرار داخل الجلسة. | **VERIFIED** للمسارات المختبرة | اختبارات Runtime وPulse. |
+| عقد سيناريو 1.2 يرفض الحقول/الأنواع/التكرارات غير المدعومة ويقيد telemetry المرئية للمتعلم. | **VERIFIED** | `s0-scenario.schema.json` واختبارات contract. |
+| Facade لا يعيد الحقيقة الداخلية أو checkpoint أو telemetry الخفية، ويعرض manifest/snapshot/event/command DTOs صريحة. | **VERIFIED** | [تقرير 006](../reports/006-pre-unity-client-boundary-review.md) واختبارات Facade. |
+| النقل HTTP/JSON محلي على loopback فقط ولا يملك endpoint للساعة أو Pulse. | **VERIFIED** headless | [ADR-002](../decisions/ADR-002-local-client-facade-transport.md). |
+| VPE Host يملك تقدم الزمن؛ `PAUSED_BY_SYSTEM` لا يتقدم؛ لا catch-up بعد overrun. | **VERIFIED** للوحدة ومسار Pulse المحدد | [تقرير 006](../reports/006-pre-unity-client-boundary-review.md). |
+| tick `0.5s` يطابق تقدم Pulse المقاس؛ `0.25s` يتبدل بين 0.24/0.26s في البيئة المقاسة. | **OBSERVED** محليًا | [ملخص benchmark](../../artifacts/benchmarks/pre_unity_client_boundary_tick_policy/pulse_tick_summary.json). |
+| الحزمة الكاملة شغلت مع Pulse الحقيقي. | **VERIFIED** | **43 اختبارًا نجح في 25.407s**، منها **8** تكاملات Pulse SDK فعلية. |
 
-## ملاحظات ومخاطر مثبتة
+## قيود ومخاطر مفتوحة
 
-| البند | الحالة | المعالجة المطلوبة |
+| البند | الحالة | الأثر/المعالجة |
 |---|---|---|
-| `advance 60s` وسيطه المحلي `2094.951ms` و`advance 120s` وسيطه `4210.104ms`. | **OBSERVED** محليًا | لا تنفذ هذه الأوامر على Unity rendering/main thread؛ يحتاج M3 خطة host/lifecycle. |
-| checkpoint save/restore حجمه `2,334,123` bytes في benchmark المحلي. | **OBSERVED** | تعامل معه كـartifact محرك منفصل، لا كـSnapshot أو DTO عميل. |
-| `DeterministicPhysiologyAdapter` test double فقط. | **INTENTIONAL** | المسار الإنتاجي المختبر هو `PulseAdapter`. |
-| استعادة checkpoint عبر إغلاق Runtime أو جلسة جديدة. | **PARTIAL / UNTESTED** | الافتراضي يحذف مجلد state عند الإغلاق؛ لا تدّع cross-session branch replay. |
-| `request_id` exactly-once عبر النقل أو جلسة جديدة. | **ABSENT BY DESIGN** | يحظر retry الأعمى بعد نتيجة غامضة؛ يلزم تصميم منفصل إن احتاجته مرحلة لاحقة. |
-| لا توجد صلاحية سريرية أو تعليمية مستقلة. | **UNVALIDATED** | تتطلب مراجعة مختصين ومنهج تحقق مستقل. |
-
-## محجوب أو مؤجل
-
-| البند | الحالة | الأثر |
-|---|---|---|
-| تنفيذ Unity وFAST spatial resolver | **DEFERRED** | حزمة M3 وعقد Facade موثقتان فقط؛ لا يوجد مشروع Unity في هذه الدفعة. |
-| Gate 0 قيمة المنتج | **UNTESTED** | لا يمثل البروتوكول اجتيازًا للبوابة. |
-| مراجعة المحتوى الطبية/التعليمية | **UNTESTED** | لا يمكن اعتماد الدلالات أو مدد الزمن أو عرض telemetry للمتعلم بعد. |
-| AI Patient وLLM/debrief | **DEFERRED** | لا تعتمد النواة على الشبكة أو نموذج لغوي. |
-| الصلاحية السريرية أو التقييم عالي العواقب | **PROHIBITED في S0** | المنتج Learning Mode تكويني فقط. |
+| Unity وFAST spatial resolver | **NOT IMPLEMENTED / DEFERRED** | لا يبدأان في هذه الدفعة. |
+| Gate 0 | **UNTESTED** | استخدم [حزمة Gate 0](../gate0/README.md) وفق اعتماد المؤسسة ثم وثق PASS/PIVOT/INCONCLUSIVE. |
+| مراجعة المحتوى الطبية/التعليمية | **UNVALIDATED** | أرسل [حزمة المراجعة](../validation/s0-medical-review-packet.md) لمراجع مستقل وسجل القرار. |
+| frame/render/network cost | **UNMEASURED** | benchmark headless لا يثبت FPS أو UnityWebRequest أو نظامًا مستهدفًا. |
+| checkpoint أو idempotency عبر جلسات/عمليات | **PARTIAL / ABSENT BY DESIGN** | يمنع retry الأعمى؛ يتطلب تصميمًا منفصلًا عند تغير النطاق. |
+| صلاحية سريرية أو تقييم عالي العواقب | **PROHIBITED في S0** | Learning Mode تكويني فقط. |
 
 ## القرارات السارية
 
-1. يثبت revision Pulse؛ أي تحديث يتطلب إعادة تشغيل دليل Gate A والمسار الإنتاجي.
-2. VPE هو مالك الزمن وترتيب الأوامر؛ Unity المستقبلي لا يصل إلى Pulse أو `PulseAdapter` مباشرة.
-3. Canonical replay = events + snapshots خفيفة؛ checkpoint branch = artifact محرك منفصل داخل الجلسة.
-4. يمنع `request_id` التكرار داخل Runtime فقط؛ لا يسمح retry الأعمى للأوامر ذات الأثر بعد فشل غامض.
-5. لا يبدأ M3/Unity أو FAST المكاني أو LLM قبل بوابة مستقلة وقرار جديد.
+1. يثبت revision Pulse؛ أي تحديث يحتاج إعادة دليل Gate A والمسار الإنتاجي.
+2. VPE يملك الزمن وترتيب الأوامر والوصول إلى Pulse؛ Unity المستقبلي لا يصل إلى Pulse أو `PulseAdapter` مباشرة.
+3. client projection لا يعيد snapshot داخليًا أو checkpoint أو hidden telemetry/pathology.
+4. النقل المحلي المختار HTTP/JSON loopback؛ DTOs وFacade يبقيان قابلين للاستبدال.
+5. `request_id` يحمي داخل جلسة Runtime فقط؛ لا retry أعمى بعد نتيجة غامضة.
+6. سياسة host المختارة 1× عند 0.5 ثانية، من دون catch-up؛ لا تدعي أنها عامة خارج البيئة المقاسة.
+7. لا يبدأ Unity حتى Gate 0 والمراجعة الطبية/التعليمية وقرار بدء مستقل.
 
 ## أحدث الأدلة
 
-- [مراجعة إعادة العمل قبل M3](../reports/005-pre-m3-runtime-hardening-review.md) — النتائج والاختبارات والbenchmark وتوصية القرار.
-- [مصفوفة Pulse ما بعد Gate A](../research/pulse-s0-capability-matrix-post-gate-a.md) — حالة كل قدرة وحدودها.
-- [عقد PulseAdapter](../contracts/pulse-adapter-process-contract.md) و[عقد VPE Client Facade](../contracts/vpe-client-facade-contract.md).
-- [حزمة جاهزية M3](../design/m3-unity-readiness.md) — متطلبات وفجوات قبل تنفيذ عميل Unity.
-- [ملخص benchmark](../../artifacts/benchmarks/pre_m3_runtime_hardening/pulse_client_operation_summary.json) و[العينات الخام](../../artifacts/benchmarks/pre_m3_runtime_hardening/pulse_client_operation_samples.csv).
+- [تقرير حدود العميل قبل Unity](../reports/006-pre-unity-client-boundary-review.md).
+- [ADR-002 النقل المحلي](../decisions/ADR-002-local-client-facade-transport.md) و[ملاحظات مصادر النقل](../research/transport-spike-source-notes.md).
+- [عقد Facade](../contracts/vpe-client-facade-contract.md) و[حزمة جاهزية M3](../design/m3-unity-readiness.md).
+- [benchmark tick](../../artifacts/benchmarks/pre_unity_client_boundary_tick_policy/pulse_tick_summary.json) و[عيناته](../../artifacts/benchmarks/pre_unity_client_boundary_tick_policy/pulse_tick_samples.csv).
+- [حزمة Gate 0](../gate0/README.md) و[حزمة المراجعة الطبية](../validation/s0-medical-review-packet.md).
 
 ## الخطوة التالية المخططة
 
-تتوقف هذه الدفعة عند **M3 REWORK**. قبل أي تنفيذ Unity: نفذ Gate 0، اطلب مراجعة مستقلة للمحتوى الطبي/التعليمي، ثم اعتمد عقد النقل والـDTOs وخطة lifecycle ومدد تقدم الزمن في قرار صريح جديد. لا يبدأ Unity في نفس الدفعة.
+تتوقف الدفعة قبل Unity. نفذ Gate 0، واطلب مراجعة مستقلة للمحتوى الطبي/التعليمي، ثم سجل قرارًا يفتح scaffold Unity المحدود أو يطلب REWORK. لا تبدأ Unity في نفس الدفعة.

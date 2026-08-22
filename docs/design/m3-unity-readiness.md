@@ -1,142 +1,97 @@
 # حزمة جاهزية M3 — عميل Unity الأدنى
 
-**الحالة:** تحضير متطلبات؛ ليست موافقة على البدء ولا تنفيذًا لـUnity.
-**النطاق المستهدف:** عميل مرئي أدنى يستهلك واجهة VPE منظمة لحالة S0 الوحيدة.
-**مبدأ السلطة:** VPE Runtime يبقى المالك الوحيد للزمن وطابور الأوامر والأدلة والوصول إلى Pulse؛ لا يصل Unity إلى Pulse أو إلى `PulseAdapter` مباشرة.
+**الحالة:** حدود العميل التقنية منفذة headless؛ Unity نفسه **غير منفذ** ولا يملك إذن البدء في هذه الدفعة.
+**النطاق المستهدف:** عميل مرئي أدنى يستهلك سطح VPE منظم وآمن للمتعلم لحالة S0 الوحيدة.
+**مبدأ السلطة:** VPE Runtime والـhost يملكان الزمن والطابور والأدلة والوصول إلى Pulse؛ لا يصل Unity إلى `VpeRuntime` الداخلي أو `PulseAdapter` أو Pulse SDK.
 
-> هذه الحزمة تصف تطبيقًا تعليميًا تكوينيًا فقط. لا تحول بيانات المحاكاة إلى تشخيص أو توصية أو قرار قبول/نقل حقيقي، ولا تضيف نجاحًا/فشلًا أو درجة عالية العواقب.
+> تظل التجربة Learning Mode تكوينية فقط. لا تقدم تشخيصًا أو توصية أو قبول/نقل حقيقيًا أو نجاحًا/فشلًا سريريًا أو تقييمًا عالي العواقب.
 
-## 1. قرار المرحلة وشروط الدخول
+## 1. حالة شروط الدخول
 
-تعرف الخطة M3 باسم **Minimal Unity Client**. هدفها هو إثبات رحلة عميل واحدة عبر VPE، وليس FAST spatial أو AI patient أو debrief أو نظام إجراءات عام. يظل FAST المكاني وإثباته من M4، ويبقى الـtimeline التكويني وإعادة العرض من M6.
-
-| شرط الدخول | الوضع الحالي | أثره على التنفيذ |
+| شرط الدخول | الحالة الحالية | الدليل أو الإجراء |
 |---|---|---|
-| Gate A الهندسي و`PulseAdapter` | **VERIFIED / INTEGRATION TESTED** | يوفران مسارًا فيزيولوجيًا headless يمكن للعميل استهلاكه عبر VPE فقط. |
-| نواة M2 والأوامر والأحداث واللقطات | **IMPLEMENTED + TESTED** | هي المصدر الوحيد للبيانات والأفعال المعتمدة. |
-| Gate 0 لاكتشاف القيمة | **UNTESTED** | لا يجوز اعتباره اجتيازًا لقيمة المنتج؛ يلزم مراجعة نتيجته قبل قرار M3. |
-| مراجعة طبية/تعليمية مستقلة | **UNTESTED** | لا يجوز ادعاء صحة محتوى الواجهة أو صياغتها قبل تنفيذ المراجعة. |
-| قرار M3 صريح | **OPEN** | هذه الوثيقة لا تمنح إذن تنفيذ؛ يسجل قرار GO / REWORK / STOP منفصل. |
-| واجهة نقل Unity ↔ VPE | **OPEN** | يجب اختيار واجهة ضيقة ومحلية/مختبرة قبل برمجة عميل حقيقي. |
+| Gate A وPulseAdapter | **VERIFIED / INTEGRATION TESTED** | مسار S0 المحلي المثبت الإصدار. |
+| نواة Runtime والأدلة والcheckpoints | **IMPLEMENTED + TESTED** | snapshots خفيفة وartifacts منفصلة داخل الجلسة. |
+| DTOs وFacade آمنة | **IMPLEMENTED + TESTED** | `VpeClientFacade` و`client_contracts.py` واختبارات منع التسريب. |
+| النقل بين العميل وVPE | **IMPLEMENTED HEADLESS** | HTTP/JSON loopback و[ADR-002](../decisions/ADR-002-local-client-facade-transport.md). |
+| lifecycle وسياسة الزمن | **IMPLEMENTED + MEASURED** | `VpePacedHost` عند 0.5s، لا catch-up. |
+| Gate 0 | **UNTESTED** | [حزمة التشغيل](../gate0/README.md) جاهزة؛ لا توجد جلسات فعلية. |
+| مراجعة طبية/تعليمية مستقلة | **UNVALIDATED** | [حزمة المراجعة](../validation/s0-medical-review-packet.md) جاهزة؛ لا رد خارجي. |
+| قرار بدء Unity | **OPEN / WAIT_FOR_REVIEW** | لا تبدأ Unity قبل البوابتين وقرار صريح لاحق. |
 
-لا يزيل النجاح الهندسي للحزمة الحالية الحاجة إلى Gate 0 أو المراجعة الطبية/التعليمية. كما لا يغير الـcommit الحالي نطاق S0 أو موعد المراجعة الصريح قبل M3.
-
-## 2. مخرج M3 وحدوده
-
-يكون مخرج M3 المقبول جولة واحدة من عميل Unity إلى VPE وإليه، مع عرض نتيجة منظمة، لهذه الحالة المحدودة فقط.
-
-| قدرة M3 المطلوبة | السلوك الأدنى | دليل القبول |
-|---|---|---|
-| مشهد مريض | يعرض حالة محاكاة واحدة بعنوان السيناريو ووضع `learning`. | يبدأ العميل بالحالة `PAUSED_BY_SCENARIO` ثم يعرض `RUNNING` بعد نجاح البدء. |
-| monitor | يعرض **الـtelemetry المسموح في السيناريو فقط** من أحدث snapshot. | تطابق القيم والـ`simulation_time_s` مع snapshot العائد من VPE. |
-| ضوابط سريرية منظمة | يعرض خيارات مشتقة من تعريف السيناريو ويقدم أمرًا منظمًا واحدًا في كل تفاعل. | يسجل VPE حدثًا مناظرًا بمعرف أمر وتسلسل صالحين. |
-| حالة السيناريو | يعرض حالة runtime وزمن المحاكاة، لا ساعة الحائط. | لا يتغير الوقت بسبب رسم واجهة أو latency أو إعادة محاولة محلية. |
-| نتيجة فعل | يعرض تأكيدًا بنيويًا للقبول أو خطأً معالجًا، ثم ينعش الحالة من VPE. | لا يستنتج العميل نجاحًا سريريًا أو درجة. |
-| رحلة ذهاب وعودة | يشغل تسلسلًا منظمًا ضد VPE من عميل Unity إلى VPE والعودة. | يجتاز اختبار قبول قابلًا للإعادة دون وصول Unity إلى Pulse. |
-
-### خارج نطاق M3 صراحة
-
-لا يشمل M3 FAST probe placement أو resolver تشريحي أو صورة/فيزياء تصوير، ولا محادثة LLM أو AI patient، ولا debrief أو rubric UI أو replay كامل أو تقييم أو تسجيل دخول أو سحابة أو crash recovery متعدد العمليات. لا ينشئ العميل إصابة أو يرسل compound أو جرعة أو أمر Pulse خامًا، ولا يعرض `adapter_state` الداخلي أو حالة Pulse المتسلسلة.
-
-## 3. حدود العقد بين العميل وVPE
-
-يجب أن يكون أي نقل مستقبلي **Facade** حول `VpeRuntime`، لا اختصارًا لطبقة physiology. نوع النقل المحدد (على سبيل المثال local API أو IPC مناسب للاختبارات) **غير مقرر** ولا تقره هذه الوثيقة. مهما كان الاختيار، يتبع العقد التالي.
+## 2. حد العميل المنفذ
 
 ```text
-Unity Client
-    ↓ Command DTO واحد ومنظم
-VPE Client Facade  ←── واجهة جديدة مطلوبة، ليست PulseAdapter
-    ↓ CommandKind / scenario validation / ordered queue
-VpeRuntime
-    ↓ PhysiologyAdapter
-PulseAdapter → عملية Pulse واحدة مثبتة الإصدار
+Unity Client (مستقبلي)
+    ↓ HTTP/JSON DTOs محلية فقط
+LocalFacadeHttpServer  ← loopback /v1، لا يملك الساعة
+    ↓ VpeClientFacade  ← projection + command validation
+VpePacedHost           ← process_pending + advance tick فقط
+    ↓
+VpeRuntime → PhysiologyAdapter → PulseAdapter → Pulse
 ```
 
-| قاعدة واجهة العميل | المتطلب |
-|---|---|
-| ملكية الزمن | لا يرسل العميل إلا طلب `advance_time` محددًا؛ لا يحدث ساعة محلية ولا يصل إلى `PulseAdapter.advance`. |
-| ترتيب الأفعال | يتعامل facade مع كل أمر كتفاعل مرتب ويعيد الحدث/اللقطة الناتجين؛ لا يعيد العميل ترتيب الأوامر أو يعيد تنفيذها بعد مهلة. |
-| تحقق السيناريو | لا يبني العميل قائمة أفعال مستقلة؛ يخفي ما لا يتيحه تعريف السيناريو ويظل VPE جهة الرفض النهائية. |
-| بيانات العرض | يستهلك فقط `RuntimeState` وenvelopes الأحداث وsnapshot (`scenario_id` و`simulation_time_s` و`engine_version` وtelemetry المسموح وسبب النشر). |
-| البيانات المخفية | لا يرسل facade `adapter_state` أو ملف checkpoint أو مسار state أو hash داخلي إلى Unity. |
-| الأخطاء | يعيد facade رمز خطأ منظمًا وآمنًا للعرض، من دون كشف سطر بروتوكول Pulse أو مسار ملف محلي أو stack trace. |
-| provenance | تربط كل استجابة snapshot ببيانات الإصدار الموجودة؛ لا يسمح للعميل باختيار revision Pulse. |
-
-## 4. قاموس تفاعلات M3
-
-تمثل هذه القائمة **مقترح واجهة عميل** مستمدًا من الأوامر المؤلفة حاليًا. لا تضيف أثرًا فيزياء جديدًا.
-
-| عنصر الواجهة | أمر VPE المقترح | بيانات العميل المقبولة | النتيجة المتوقعة من VPE | وضع M3 |
-|---|---|---|---|---|
-| اختيار نية تاريخ | `record_history_intent` | `intent_id` من `allowed_history_intents` | `clinical.intent.recorded` | مطلوب |
-| طلب vital monitor | `request_observation` | `observation_id: VITALS` | `observation.requested`؛ يعرض آخر snapshot | مطلوب |
-| طلب FAST | `request_observation` | `observation_id: FAST` | `observation.requested` فقط | مطلوب كطلب؛ لا نتيجة FAST أو اكتساب في M3 |
-| تقدم الزمن | `advance_time` | مدة من قائمة UI محددة مسبقًا | `clock.advanced` ثم `snapshot.published` | مطلوب |
-| تدخل مقيد | `apply_intervention` | `intervention_id` من قاموس السيناريو فقط | `intervention.applied` ثم `snapshot.published` | مطلوب |
-| تصعيد منظم | `record_escalation` | `escalation_id` من `escalations.allowed` | `escalation.recorded` | مطلوب |
-| checkpoint / restore | الأوامر القائمة | معرف checkpoint | أحداث وsnapshots قائمة | غير مطلوب في M3؛ يؤجل لتجربة retry/replay في M6 |
-| CBC | `request_observation` | `CBC` | العقد التشغيلي يقبله حاليًا | غير معروض حتى يصبح مؤلفًا في السيناريو ومراجعًا طبيًا/تعليميًا |
-
-### فجوات عقد يجب إغلاقها قبل بدء التنفيذ
-
-| الفجوة | الحالة | الإجراء المطلوب قبل M3 |
+| سطح العميل | ما يتلقاه أو يرسله | ما لا يراه أو يملكه |
 |---|---|---|
-| النقل بين Unity وVPE | لا توجد واجهة خدمة/IPC للعميل اليوم. | ADR أو contract قصير يحدد عملية المالك، lifecycle، DTOs، الأخطاء، واختبار محلي. |
-| قائمة الملاحظات | `VpeRuntime` يضم allowlist ثابتًا، بينما السيناريو الحالي لا يؤلف إلا FAST. | توثيق قرار: إما `VITALS` قدرة عرض مضمونة و`FAST` طلب فقط في M3، أو ترقية observation schema قبل الواجهة. لا يعرض CBC الآن. |
-| مدد تقدم الزمن | تقبل النواة رقمًا موجبًا، بلا قاموس مدد للواجهة. | اختيار مجموعة أزرار ثابتة ومراجعة تعليمية لها؛ لا يدخل المستخدم رقمًا حرًا. |
-| تمثيل حالة العميل | لا يوجد DTO منشور لـ`start`/`submit`/`drain`/`snapshot`. | تعريف response snapshot/event آمن للعميل، بلا `adapter_state`. |
-| نتيجة السيناريو | لا توجد success/failure rules في S0. | تصميم panel يعرض حالة تقدم تقنية وإقرار فعل فقط، لا نتيجة أداء أو حكم سريري. |
+| `ClientScenarioManifest` | عنوان تعلمي، وضع learning، قوائم أفعال وملاحظات، telemetry مرئية. | pathology، flow rate، Pulse revision، FAST finding، completion. |
+| `ClientSnapshot` | وقت VPE وحالة Runtime وHR/MAP/SpO₂ المؤلفة. | blood volume، hemorrhaged volume، engine version، reason، adapter/checkpoint state. |
+| `ClientEvent` | نوع دليل وidentifier أو `duration_s` محدود. | actor/source وبيانات Pulse/compound/rate/volume وstack trace. |
+| `CommandRequest` | history/hypothesis/observation/escalation/intervention مؤلفة مع `request_id`. | `advance_time` وcheckpoint/restore وpayload حر. |
+| `CommandOutcome` | ACCEPTED/PENDING/COMPLETED/REJECTED/AMBIGUOUS وخطأ منظم آمن. | retry ضمني أو تفاصيل داخلية. |
 
-## 5. مكونات جاهزية M3
+## 3. النقل المحلي المختار
 
-| المكوّن | المسؤولية | ما يعتمد عليه | ليس مسؤولًا عن |
+النقل المختار HTTP/JSON محلي على loopback فقط. يطلب كل عميل token قصير العمر في `X-Nexora-Client-Token`، وهو حاجز تطوير محلي وليس مصادقة إنتاجية. لا يوجد cloud أو TLS أو multi-user أو endpoint لتقدم الزمن أو `drain` أو Pulse.
+
+| endpoint | العملية | الاستجابة |
+|---|---|---|
+| `/v1/scenario` | `GET` | manifest آمن |
+| `/v1/state` | `GET` | حالة وزمن VPE |
+| `/v1/snapshot` | `GET` | snapshot آمن أو 404 منظم |
+| `/v1/events?after=` | `GET` | events مرئية فقط |
+| `/v1/commands` | `POST` | command accepted أو outcome منظم |
+| `/v1/commands/<request_id>` | `GET` | outcome أو pending منظم |
+
+تم اختيار HTTP/JSON على IPC مخصص لأن Unity توثق `UnityWebRequest` لطلبات HTTP/الردود، بينما يتطلب IPC framing وعقد توافق مخصصين. [1] [2]
+
+## 4. lifecycle وسياسة tick
+
+يعالج host طابور الأفعال ثم يضيف تقدم زمن داخليًا. العميل لا يملك ساعة محاكاة، ولا يرسم catch-up عند stall. إذا فشل host أو المحرك، ينتقل Runtime إلى `PAUSED_BY_SYSTEM`; لا يتقدم الزمن حتى استئناف صريح، ولا يحول الفرق الجداري إلى زمن سريري.
+
+**السياسة المقاسة:** 1× عند `0.5s` simulation tick. جرب benchmark Pulse الحقيقي 0.1 و0.25 و0.5 و1 و2 ثانية. أعطى 0.25 تقدمًا متناوبًا 0.24/0.26 ثانية، لذا لا يستخدم كافتراضي؛ تطابق 0.5 الثانية مع الزيادة المطلوبة في العينات. تظل هذه نتيجة sandbox/headless محلية وليست SLA أو قياس Unity. [3]
+
+## 5. قاموس تفاعلات M3
+
+| عنصر الواجهة المستقبلي | أمر Facade المسموح | النتيجة المرئية | حالة المحتوى |
 |---|---|---|---|
-| `M3 UX specification` | تدفقات المشهد والـmonitor والضوابط ورسائل الخطأ. | أهداف S0، العقد، مراجعة محتوى. | قواعد physiology أو scoring. |
-| `VPE Client Facade contract` | تحويل DTOs إلى أوامر VPE وعرض event/snapshot آمنين. | `VpeRuntime` وعقد event وscenario. | Pulse SDK أو Unity rendering. |
-| `VPE host/lifecycle plan` | بدء/إيقاف VPE وPulseAdapter وتقرير readiness بطريقة محلية مضبوطة. | ADR-001 وعقد PulseAdapter. | التعافي الخفي أو إعادة تنفيذ الأوامر. |
-| `Unity client shell` | العرض، الإدخال المنظم، عرض الحالة والأخطاء. | facade فقط. | التحقق الطبي، اختيار revision، أو ملكية الوقت. |
-| `M3 contract test harness` | يثبت الذهاب والعودة والتسلسل ومنع البيانات المحظورة. | test double ثم PulseAdapter عند توفر البيئة. | صلاحية تعليمية أو إكلينيكية. |
-| `Content-review packet` | يسجل النصوص والرموز ومدد الزمن وتفسير النتائج. | مراجعين طبيين/تعليميين مستقلين. | تعديل مصادر حقيقة VPE من واجهة Unity. |
+| نية تاريخ | `record_history_intent` | `clinical.intent.recorded` | مؤلف ومختبر |
+| فرضية سريرية | `record_clinical_hypothesis` | `clinical.hypothesis.recorded` | دليل تكويني لا تشخيص آلي |
+| VITALS | `request_observation` | `observation.requested` + snapshot | قدرة مدمجة ومقيدة |
+| FAST | `request_observation` | `observation.requested` فقط | طلب منظم؛ لا FAST spatial/resolver في M3 |
+| تدخل مقيد | `apply_intervention` | `intervention.applied` + snapshot | Saline/PackedRBC بمعرف فقط، لا جرعة/compound حر |
+| تصعيد | `record_escalation` | `escalation.recorded` | دليل غير فيزيولوجي فقط |
+| clock | لا أمر عميل | state/snapshot من VPE | host فقط عند 0.5s |
 
-## 6. خطة التحقق المستقبلية
+## 6. الفجوات المغلقة والمفتوحة
 
-| مستوى التحقق | ما يثبت | معيار القبول |
+| الفجوة السابقة | الحالة | الملاحظة |
 |---|---|---|
-| DTO/schema tests | لا يقبل facade حقولًا غير مسموحة أو أوامر/معرفات حرة. | رفض مضبوط بلا إرسال Pulse. |
-| facade + deterministic adapter | ترتيب كل تفاعل والحدث/اللقطة الناتجان. | تطابق event type و`command_id` ووقت VPE مع العقد. |
-| Unity play-mode مع test double | أن الضوابط تعرض القواميس الصحيحة ولا تملك ساعة مستقلة. | لا يستطيع اللاعب إصدار compound حر أو تعديل telemetry محليًا. |
-| end-to-end محلي مع PulseAdapter | رحلة M3 المختارة عبر facade وruntime وPulse SDK. | ينجح مسار مثبت الإصدار؛ لا يدعي determinism عامًا. |
-| مراجعة محتوى مستقلة | أن النصوص والرموز ومدد التقدم لا تقدم نفسها كعلاج أو تقييم. | قرار موثق GO / REWORK / STOP. |
-| Gate 0 | أن قيمة consequence/replay مفهومة للمتعلمين والمعلمين. | يحفظ الأدلة ضد معايير STOP/PIVOT المقررة. |
+| Facade وDTOs | **CLOSED FOR HEADLESS** | لا تسرب للحقائق المخفية في المسارات المختبرة. |
+| نقل محلي وعقد أخطاء | **CLOSED FOR HEADLESS** | loopback HTTP/JSON قابل للاستبدال. |
+| lifecycle وstop semantics | **CLOSED FOR HEADLESS** | host paced و`PAUSED_BY_SYSTEM` بلا catch-up. |
+| قائمة observations | **CLOSED FOR S0** | `VITALS` مدمج، FAST مؤلف، CBC غير معروض. |
+| مدد تقدم الزمن | **CLOSED FOR S0 HOST** | 0.5s سياسة host؛ ليست زر تقدم زمن للمتعلم. |
+| Unity shell / play-mode | **OPEN / NOT IMPLEMENTED** | لا ينفذ قبل قرار البدء. |
+| Gate 0 | **OPEN / UNTESTED** | يحتاج جلسات فعلية وفق البروتوكول. |
+| مراجعة المحتوى | **OPEN / UNVALIDATED** | يحتاج ردًا مستقلًا موثقًا. |
+| cross-session recovery | **OPEN / OUT_OF_SCOPE** | لا retry أعمى أو exactly-once خارج الجلسة. |
 
-## 7. مخاطر وقرارات مفتوحة
+## 7. قرار GO-M3 اللاحق
 
-| الموضوع | الخطر | الحاجز المطلوب |
-|---|---|---|
-| اعتماد Unity قبل قرار القيمة | بناء واجهة قبل إثبات أن الفرضية التعليمية تستحق التوسيع. | إكمال Gate 0 ومراجعة قرار صريح قبل البدء. |
-| نقل ملكية الزمن للواجهة | اختلاف بين timer مرئي وحالة Pulse. | facade يرسل أوامر فقط ويأخذ الزمن من VPE. |
-| تسريب التفاصيل المخفية | عرض `adapter_state` أو سبب المرض أو بيانات state كمعلومة للمتعلم. | DTO client-safe وreview محتوى واختبارات منع الحقول. |
-| توسع FAST مبكرًا | تحويل M3 إلى M4 أو بناء فيزياء تصوير غير مثبتة. | FAST في M3 طلب منظم فقط؛ acquisition/resolver/Gate D مؤجلة. |
-| دلالات علاجية ضمن controls | أن تُفهم أسماء الأفعال والرموز كتوصية. | قاموس سيناريو محدود، وcopy reviewed، ولا قيم حرة أو نص توجيهي. |
-| توقف host أو adapter | إعادة تشغيل أو إعادة تنفيذ صامتة تفسد الأدلة. | surfaced failure، إيقاف منظم، وتعافٍ لاحق من checkpoint صريح فقط. |
+يمكن اعتبار الجاهزية التقنية للـscaffold **READY** فقط، لكن لا يوجد GO شامل. قبل إنشاء مشروع Unity يجب تسجيل: (1) قرار Gate 0 PASS/PIVOT/INCONCLUSIVE، (2) قرار مراجعة محتوى ACCEPT/REWORK/OUT_OF_SCOPE، (3) اعتماد النسخة المعروضة من الأفعال والنصوص، (4) تأكيد Learning Mode بلا high-stakes assessment، و(5) خطة اختبار Unity على المنصة المستهدفة. إذا بقي Gate 0 أو المراجعة غير مكتملين، يظل Unity متوقفًا.
 
-## 8. قائمة قرار GO-M3
+## المراجع
 
-لا يبدأ تنفيذ Unity عند اكتمال هذه الوثيقة وحدها. يلزم أن يسجل مالك المشروع قرارًا صريحًا بعد العناصر التالية:
-
-1. اكتمال أو قرار واضح بشأن Gate 0 ومعايير STOP/PIVOT.
-2. مراجعة طبية وتعليمية مستقلة لعقد S0 وللنصوص/الأفعال المعروضة.
-3. اعتماد حدود M3 وجميع عناصر خارج النطاق أعلاه.
-4. اعتماد عقد `VPE Client Facade` وخطة lifecycle قبل إنشاء مشروع Unity.
-5. اختيار مدد الزمن المعروضة وقرار قائمة الملاحظات.
-6. تثبيت خطة الاختبار مع test double ومسار PulseAdapter المحلي.
-7. تأكيد أن أي استخدام سيبقى Learning Mode تكوينيًا بلا high-stakes assessment.
-
-## المراجع الداخلية
-
-- Master Plan v0.3 (مرجع المشروع المشترك): تعريف M3، الحدود وM4/M6 اللاحقتان.
-- [ADR-001](../decisions/ADR-001-pulse-process-topology.md): ملكية VPE وPulse وعزل العميل.
-- [أهداف تعلم S0](s0-learning-objectives.md): السلوك والدليل المطلوبان.
-- [عقد PulseAdapter](../contracts/pulse-adapter-process-contract.md): حدود عملية physiology وتحقق provenance.
-- [الحالة الحالية](../status/CURRENT_STATUS.md): وضع Gate A وGate 0 والمخاطر المعروفة.
-- [`s0_runtime_demo.json`](../../artifacts/representative-small-results/s0_runtime_demo.json): مثال event/snapshot هندسي تمثيلي، لا مصدر سريري.
+[1]: https://docs.unity3d.com/6000.5/Documentation/Manual/web-request.html "Unity Manual: Interacting with web servers"
+[2]: https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-use-named-pipes-for-network-interprocess-communication "Microsoft Learn: Named pipes"
+[3]: ../../artifacts/benchmarks/pre_unity_client_boundary_tick_policy/pulse_tick_summary.json "ملخص benchmark سياسة tick"
