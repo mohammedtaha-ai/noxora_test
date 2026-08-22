@@ -11,6 +11,7 @@ from .scenario import S0Scenario
 from .scenario_io import load_s0_scenario
 from .pulse_adapter import PulseAdapter, PulseAdapterConfig, PulseAdapterError
 from .client_facade import VpeClientFacade
+from .local_transport import LocalFacadeHttpServer
 from .client_contracts import (
     ClientCommandStatus,
     ClientError,
@@ -34,6 +35,7 @@ __all__ = [
     "PulseAdapterConfig",
     "PulseAdapterError",
     "VpeClientFacade",
+    "LocalFacadeHttpServer",
     "ClientCommandStatus",
     "ClientError",
     "ClientErrorCode",
