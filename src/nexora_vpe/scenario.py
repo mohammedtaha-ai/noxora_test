@@ -22,6 +22,9 @@ ALLOWED_HISTORY_INTENTS = frozenset(
 
 ALLOWED_CLINICAL_HYPOTHESES = frozenset({"INTERNAL_BLEEDING"})
 BUILT_IN_OBSERVATION_IDS = frozenset({"VITALS"})
+LEARNER_VISIBLE_TELEMETRY = frozenset(
+    {"heart_rate_bpm", "mean_arterial_pressure_mmhg", "oxygen_saturation"}
+)
 
 
 @dataclass(frozen=True)
@@ -111,6 +114,8 @@ class S0Scenario:
             raise ValueError("Scenario requires learner-visible telemetry")
         if not set(self.learner_visible_telemetry).issubset(self.telemetry_keys):
             raise ValueError("Learner-visible telemetry must be a subset of internal telemetry")
+        if not set(self.learner_visible_telemetry).issubset(LEARNER_VISIBLE_TELEMETRY):
+            raise ValueError("Scenario exposes unsupported learner-visible telemetry")
         if self.completion_success_rules or self.completion_failure_rules:
             raise ValueError("S0 completion rules must remain empty in learning mode")
         if not self.interventions:

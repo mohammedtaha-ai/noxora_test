@@ -63,6 +63,29 @@ class VpeRuntimeTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Invalid S0 scenario contract"):
                 load_s0_scenario(invalid_path)
 
+    def test_scenario_loader_rejects_malformed_authoritative_values(self) -> None:
+        project_root = Path(__file__).resolve().parents[1]
+        source = project_root / "scenarios" / "trauma_splenic_01.json"
+        cases = {
+            "learning_objectives_type": lambda raw: raw.__setitem__("learning_objectives", "identify_deterioration"),
+            "telemetry_item_type": lambda raw: raw.__setitem__("telemetry", ["heart_rate_bpm", 7]),
+            "history_intent_type": lambda raw: raw["history"].__setitem__("allowed_intents", ["PAIN_ONSET", 7]),
+            "clinical_hypothesis_type": lambda raw: raw["clinical_hypotheses"].__setitem__("allowed", ["INTERNAL_BLEEDING", 7]),
+            "observation_finding_type": lambda raw: raw["observations"]["allowed"][0].__setitem__("controlled_finding", 7),
+            "intervention_number_type": lambda raw: raw["interventions"]["allowed"][0].__setitem__("volume_ml", "500"),
+            "duplicate_observation_id": lambda raw: raw["observations"]["allowed"].append(dict(raw["observations"]["allowed"][0])),
+            "hidden_client_telemetry": lambda raw: raw["client_view"].__setitem__("visible_telemetry", ["blood_volume_ml"]),
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            for name, mutate in cases.items():
+                with self.subTest(name=name):
+                    raw = json.loads(source.read_text(encoding="utf-8"))
+                    mutate(raw)
+                    invalid_path = Path(directory) / f"{name}.json"
+                    invalid_path.write_text(json.dumps(raw), encoding="utf-8")
+                    with self.assertRaisesRegex(ValueError, "Invalid S0 scenario contract"):
+                        load_s0_scenario(invalid_path)
+
     def test_scenario_schema_covers_source_authoritative_fields(self) -> None:
         project_root = Path(__file__).resolve().parents[1]
         raw = json.loads((project_root / "scenarios" / "trauma_splenic_01.json").read_text(encoding="utf-8"))

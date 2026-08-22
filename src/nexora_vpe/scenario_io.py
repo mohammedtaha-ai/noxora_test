@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -57,6 +58,25 @@ def _exact_keys(value: object, expected: frozenset[str], context: str) -> Mappin
     return mapping
 
 
+def _require_string(value: object, context: str, allow_empty: bool = False) -> str:
+    if not isinstance(value, str) or (not allow_empty and not value):
+        raise ValueError(f"{context} must be a non-empty string")
+    return value
+
+
+def _require_string_list(value: object, context: str) -> list[str]:
+    items = _list(value, context)
+    for index, item in enumerate(items):
+        _require_string(item, f"{context}[{index}]")
+    return items
+
+
+def _require_number(value: object, context: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+        raise ValueError(f"{context} must be a finite number")
+    return float(value)
+
+
 def _unique_ids(items: list[Any], context: str) -> None:
     ids: list[str] = []
     for index, item in enumerate(items):
@@ -109,6 +129,33 @@ def _validate_raw_contract(raw: object) -> Mapping[str, Any]:
     _unique_ids(observation_items, "observations.allowed")
     _unique_ids(intervention_items, "interventions.allowed")
     _unique_ids(escalation_items, "escalations.allowed")
+
+    for field in ("schema_version", "id", "title", "mode", "pulse_revision"):
+        _require_string(scenario[field], field)
+    _require_string(scenario["patient"]["template"], "patient.template")
+    _require_string(pathology["existing_internal_hemorrhage"]["compartment"], "pathology.existing_internal_hemorrhage.compartment")
+    _require_number(pathology["existing_internal_hemorrhage"]["flow_rate_ml_min"], "pathology.existing_internal_hemorrhage.flow_rate_ml_min")
+    _require_string_list(scenario["learning_objectives"], "learning_objectives")
+    _require_string_list(scenario["history"]["allowed_intents"], "history.allowed_intents")
+    _require_string_list(scenario["clinical_hypotheses"]["allowed"], "clinical_hypotheses.allowed")
+    _require_string_list(scenario["telemetry"], "telemetry")
+    _require_string(scenario["client_view"]["title"], "client_view.title")
+    _require_string_list(scenario["client_view"]["visible_telemetry"], "client_view.visible_telemetry")
+    _list(scenario["completion"]["success_rules"], "completion.success_rules")
+    _list(scenario["completion"]["failure_rules"], "completion.failure_rules")
+    for index, item in enumerate(observation_items):
+        mapping = _mapping(item, f"observations.allowed[{index}]")
+        _require_string(mapping["id"], f"observations.allowed[{index}].id")
+        if "controlled_finding" in mapping:
+            _require_string(mapping["controlled_finding"], f"observations.allowed[{index}].controlled_finding")
+    for index, item in enumerate(intervention_items):
+        mapping = _mapping(item, f"interventions.allowed[{index}]")
+        _require_string(mapping["id"], f"interventions.allowed[{index}].id")
+        _require_string(mapping["pulse_compound"], f"interventions.allowed[{index}].pulse_compound")
+        _require_number(mapping["volume_ml"], f"interventions.allowed[{index}].volume_ml")
+        _require_number(mapping["rate_ml_min"], f"interventions.allowed[{index}].rate_ml_min")
+    for index, item in enumerate(escalation_items):
+        _require_string(_mapping(item, f"escalations.allowed[{index}]")["id"], f"escalations.allowed[{index}].id")
     return scenario
 
 
@@ -161,7 +208,7 @@ def load_s0_scenario(path: str | Path) -> S0Scenario:
             mode=raw["mode"],
             schema_version=raw["schema_version"],
         )
+        scenario.validate()
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         raise ValueError(f"Invalid S0 scenario contract: {source}") from exc
-    scenario.validate()
     return scenario
