@@ -90,6 +90,72 @@ class VpeRuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Escalation not allowed by scenario"):
             self.runtime.drain()
 
+    def test_queue_failure_retains_unprocessed_commands_in_order(self) -> None:
+        self.runtime.submit(CommandKind.ADVANCE_TIME, "learner", {"duration_s": 1.0})
+        self.runtime.submit(
+            CommandKind.APPLY_INTERVENTION,
+            "learner",
+            {"intervention_id": "unknown_intervention"},
+        )
+        retained_id = self.runtime.submit(
+            CommandKind.RECORD_HISTORY_INTENT,
+            "learner",
+            {"intent_id": "PAIN_ONSET"},
+        )
+
+        with self.assertRaisesRegex(ValueError, "Intervention not allowed by scenario"):
+            self.runtime.drain()
+
+        meaningful = [event for event in self.runtime.events() if event.event_type != EventType.SNAPSHOT_PUBLISHED]
+        self.assertEqual([EventType.CLOCK_ADVANCED], [event.event_type for event in meaningful])
+        self.assertEqual(1.0, self.runtime.simulation_time_s)
+        self.assertEqual((retained_id,), self.runtime.queued_command_ids())
+
+        retained_events = self.runtime.drain()
+        self.assertEqual(EventType.CLINICAL_INTENT_RECORDED, retained_events[0].event_type)
+        self.assertEqual((), self.runtime.queued_command_ids())
+
+    def test_invalid_actor_cannot_mutate_intervention_or_advance(self) -> None:
+        initial_event_count = len(self.runtime.events())
+        initial_snapshot_count = len(self.runtime.snapshots())
+
+        self.runtime.submit(
+            CommandKind.APPLY_INTERVENTION,
+            "untrusted_actor",
+            {"intervention_id": "crystalloid_saline"},
+        )
+        with self.assertRaisesRegex(ValueError, "Event actor is not permitted"):
+            self.runtime.drain()
+        self.assertEqual(0.0, self.runtime.simulation_time_s)
+        self.assertEqual(initial_event_count, len(self.runtime.events()))
+        self.assertEqual(initial_snapshot_count, len(self.runtime.snapshots()))
+
+        self.runtime.submit(CommandKind.ADVANCE_TIME, "untrusted_actor", {"duration_s": 30.0})
+        with self.assertRaisesRegex(ValueError, "Event actor is not permitted"):
+            self.runtime.drain()
+        self.assertEqual(0.0, self.runtime.simulation_time_s)
+        self.assertEqual(initial_event_count, len(self.runtime.events()))
+        self.assertEqual(initial_snapshot_count, len(self.runtime.snapshots()))
+
+    def test_malformed_payload_or_unknown_intervention_cannot_mutate_physiology(self) -> None:
+        initial_event_count = len(self.runtime.events())
+        initial_snapshot_count = len(self.runtime.snapshots())
+        self.runtime.submit(CommandKind.ADVANCE_TIME, "learner", {"duration_s": float("nan")})
+        with self.assertRaisesRegex(ValueError, "positive finite duration_s"):
+            self.runtime.drain()
+        self.assertEqual(0.0, self.runtime.simulation_time_s)
+
+        self.runtime.submit(
+            CommandKind.APPLY_INTERVENTION,
+            "learner",
+            {"intervention_id": "unknown_intervention"},
+        )
+        with self.assertRaisesRegex(ValueError, "Intervention not allowed by scenario"):
+            self.runtime.drain()
+        self.assertEqual(0.0, self.runtime.simulation_time_s)
+        self.assertEqual(initial_event_count, len(self.runtime.events()))
+        self.assertEqual(initial_snapshot_count, len(self.runtime.snapshots()))
+
     def test_only_explicit_checkpoint_serializes_engine_state(self) -> None:
         adapter = CountingDeterministicAdapter()
         runtime = VpeRuntime(splenic_hemorrhage_learning_scenario(), adapter)

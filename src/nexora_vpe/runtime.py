@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 from typing import Any, Mapping
 
 from .adapter import PhysiologyAdapter
-from .events import EvidenceStore
+from .events import EvidenceStore, validate_event_actor
 from .model import CheckpointArtifact, Command, CommandKind, Event, EventType, RuntimeState, Snapshot
 from .scenario import S0Scenario
 
@@ -61,8 +62,15 @@ class VpeRuntime:
         starting_index = len(self.evidence.events())
         pending = sorted(self._queue, key=lambda command: command.submitted_order)
         self._queue = []
-        for command in pending:
-            self._apply(command)
+        for index, command in enumerate(pending):
+            try:
+                self._apply(command)
+            except Exception:
+                # A rejected command is terminally reported by the raised error.
+                # Commands after it remain queued, in original order, for an
+                # explicit subsequent drain; they are never silently discarded.
+                self._queue = pending[index + 1 :] + self._queue
+                raise
         return self.evidence.events()[starting_index:]
 
     def complete(self) -> None:
@@ -82,7 +90,71 @@ class VpeRuntime:
         """Return in-session restorable artifacts, never canonical snapshots."""
         return tuple(self._checkpoints.values())
 
+    def queued_command_ids(self) -> tuple[str, ...]:
+        """Expose retained command order for runtime-contract diagnostics/tests."""
+        return tuple(command.command_id for command in sorted(self._queue, key=lambda item: item.submitted_order))
+
+    def _validate_command(self, command: Command) -> None:
+        """Reject all structurally knowable errors before adapter mutation."""
+        if not isinstance(command.kind, CommandKind):
+            raise ValueError("Unsupported command kind")
+        if not isinstance(command.payload, Mapping):
+            raise ValueError("Command payload must be a mapping")
+        validate_event_actor(command.actor)
+
+        if command.kind == CommandKind.ADVANCE_TIME:
+            duration_s = command.payload.get("duration_s")
+            if (
+                isinstance(duration_s, bool)
+                or not isinstance(duration_s, (int, float))
+                or not math.isfinite(float(duration_s))
+                or duration_s <= 0
+            ):
+                raise ValueError("advance_time requires a positive finite duration_s")
+            return
+
+        if command.kind == CommandKind.RECORD_HISTORY_INTENT:
+            if command.payload.get("intent_id") not in self.scenario.allowed_history_intents:
+                raise ValueError("History intent is not allowed by scenario")
+            return
+
+        if command.kind == CommandKind.REQUEST_OBSERVATION:
+            if command.payload.get("observation_id") not in {"FAST", "VITALS", "CBC"}:
+                raise ValueError("Observation is not allowed by S0")
+            return
+
+        if command.kind == CommandKind.RECORD_ESCALATION:
+            escalation_id = command.payload.get("escalation_id")
+            if not isinstance(escalation_id, str):
+                raise ValueError("record_escalation requires escalation_id")
+            self.scenario.escalation(escalation_id)
+            return
+
+        if command.kind == CommandKind.APPLY_INTERVENTION:
+            intervention_id = command.payload.get("intervention_id")
+            if not isinstance(intervention_id, str):
+                raise ValueError("apply_intervention requires intervention_id")
+            self.scenario.intervention(intervention_id)
+            return
+
+        if command.kind == CommandKind.CREATE_CHECKPOINT:
+            checkpoint_id = command.payload.get("checkpoint_id")
+            if not isinstance(checkpoint_id, str) or not checkpoint_id:
+                raise ValueError("create_checkpoint requires checkpoint_id")
+            if checkpoint_id in self._checkpoints:
+                raise ValueError("Checkpoint identifier already exists")
+            return
+
+        if command.kind == CommandKind.RESTORE_CHECKPOINT:
+            checkpoint_id = command.payload.get("checkpoint_id")
+            if checkpoint_id not in self._checkpoints:
+                raise ValueError("Unknown checkpoint identifier")
+            return
+
+        raise ValueError(f"Unsupported command kind: {command.kind}")
+
     def _apply(self, command: Command) -> None:
+        self._validate_command(command)
         if command.kind == CommandKind.ADVANCE_TIME:
             duration_s = command.payload.get("duration_s")
             if not isinstance(duration_s, (int, float)) or duration_s <= 0:

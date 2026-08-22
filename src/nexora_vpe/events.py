@@ -10,6 +10,11 @@ _ALLOWED_ACTORS = {"learner", "runtime", "scenario", "system"}
 _ALLOWED_SOURCES = {"vpe_core", "physiology_adapter", "scenario_runtime", "future_fast_resolver"}
 
 
+def validate_event_actor(actor: object) -> None:
+    if not isinstance(actor, str) or actor not in _ALLOWED_ACTORS:
+        raise ValueError("Event actor is not permitted")
+
+
 def validate_event(event: Event) -> None:
     if event.schema_version != "1.0":
         raise ValueError("Unsupported event schema version")
@@ -17,8 +22,7 @@ def validate_event(event: Event) -> None:
         raise ValueError("Event requires stable event_id and scenario_id")
     if event.simulation_time_s < 0:
         raise ValueError("Event simulation time cannot be negative")
-    if event.actor not in _ALLOWED_ACTORS:
-        raise ValueError("Event actor is not permitted")
+    validate_event_actor(event.actor)
     if event.source not in _ALLOWED_SOURCES:
         raise ValueError("Event source is not permitted")
     if not isinstance(event.event_type, EventType):
