@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import json
+from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
@@ -74,9 +76,18 @@ class PlatformEventTests(unittest.TestCase):
         event = self._event(payload={"scenario_version_id": "scenario-v1"})
         serialized = event.as_dict()
         self.assertEqual(event.event_id, serialized["event_id"])
-        self.assertEqual("tenant-alpha", serialized["scope"]["tenant_id"])
+        self.assertEqual("tenant-alpha", serialized["tenant_id"])
+        self.assertNotIn("scope", serialized)
         self.assertEqual("INTERNAL", serialized["classification"])
         self.assertEqual("2026-08-23T12:00:00Z", serialized["occurred_at"])
+
+    def test_event_matches_required_portable_json_schema_fields(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "platform-event-envelope.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        serialized = self._event(payload={"scenario_version_id": "scenario-v1"}).as_dict()
+        self.assertTrue(set(schema["required"]).issubset(serialized))
+        self.assertTrue(set(serialized).issubset(schema["properties"]))
+        self.assertNotIn("scope", serialized)
 
     def test_event_rejects_nonportable_names_and_non_json_payload(self) -> None:
         with self.assertRaises(PlatformEventError):
