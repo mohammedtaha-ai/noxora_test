@@ -104,6 +104,18 @@ class VpeRuntime:
                 self._request_outcomes[command.request_id] = self.evidence.events()[event_index:]
         return self.evidence.events()[starting_index:]
 
+    def pause_by_system(self) -> None:
+        """Pause simulation time because the host cannot safely execute a tick."""
+        if self.state != RuntimeState.RUNNING:
+            raise RuntimeError("Only a running scenario may be paused by the system")
+        self.state = RuntimeState.PAUSED_BY_SYSTEM
+
+    def resume_from_system_pause(self) -> None:
+        """Resume only an explicit system pause; elapsed wall time is not replayed."""
+        if self.state != RuntimeState.PAUSED_BY_SYSTEM:
+            raise RuntimeError("Runtime is not paused by the system")
+        self.state = RuntimeState.RUNNING
+
     def complete(self) -> None:
         if self.state != RuntimeState.RUNNING:
             raise RuntimeError("Only a running scenario may complete")
