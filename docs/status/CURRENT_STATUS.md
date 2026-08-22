@@ -2,73 +2,91 @@
 
 ## المرحلة الحالية
 
-**المرحلة:** اكتملت Gate A ونواة S0 headless وPulseAdapter الإنتاجي، ثم حدود العميل قبل Unity، ثم حزمة **Scale-ready, not scale-now** المعمارية. لا يوجد مشروع Unity أو cloud deployment أو database/broker provision في هذه الدفعة.
+**المرحلة:** اكتملت Gate A ونواة S0 headless وPulseAdapter وحدود العميل، ثم Scale-ready architecture، ثم **تصحيح Polyglot Target**. لا يوجد Laravel app أو Go service أو Unity أو cloud deployment أو database/broker provision في هذه الدفعة.
 **الفرع العامل:** `manus/s0-foundation`.
 
-> النجاح الهندسي المحلي والمعمارية المستهدفة لا يثبتان صحة سريرية أو فعالية تعليمية أو صلاحية تقييم عالي العواقب أو سعة إنتاجية.
+> لا يثبت النجاح الهندسي المحلي أو المعمارية المستهدفة صلاحية سريرية أو فعالية تعليمية أو readiness إنتاجي أو سعة مليون مستخدم.
 
 ## الأحكام المنفصلة الحالية
 
 | البعد | الحكم | التفسير الدقيق |
 |---|---|---|
-| **TECHNICAL M3 READINESS** | **READY** لبدء scaffold Unity محدود ومراجع فقط | Facade وDTOs آمنة، نقل loopback، host paced، tests وbenchmark موجودة. لا يعني أن Unity منفذ أو مُثبت على منصات مستهدفة. |
-| **GATE 0** | **UNTESTED** | توجد حزمة تشغيل وقوالب، ولا توجد جلسات أو مشاركون أو مذكرة قرار مكتملة. |
-| **MEDICAL REVIEW** | **UNVALIDATED** | توجد حزمة مراجعة مستقلة، ولا يوجد رد أو توقيع خارجي موثق. |
-| **SCALE-READY ARCHITECTURE** | **REVIEW READY** | Control/Data Plane boundaries وcontracts وoutbox/object storage spike موثقة ومختبرة محليًا؛ لا توجد بنية production منشورة. |
+| **POLYGLOT PLATFORM ARCHITECTURE** | **ACCEPT** | ownership Laravel/Go/Python/C++/C# وdata/contract/hot-path boundaries موثقة؛ لا توجد خدمات منشورة. |
+| **CURRENT S0 IMPLEMENTATION** | **KEEP** | Python VPE وC++ Pulse وFacade/host/local transport باقية؛ لا rewrite. |
+| **READY TO IMPLEMENT LARAVEL CONTROL PLANE** | **YES — في دفعة مستقلة محدودة** | يتطلب product scope، Laravel schema/migrations، tenant/RBAC model، owner outbox، واختبارات failure/load. |
+| **READY TO IMPLEMENT GO PLATFORM PLANE** | **YES — في دفعة مستقلة محدودة** | يتطلب contracts، registry/lease/fencing، observability، failure/load tests؛ لا production promise. |
+| **TECHNICAL M3 READINESS** | **READY** لscaffold Unity محدود ومراجع فقط | لا يعني Unity منفذًا أو platform/cloud ready. |
+| **GATE 0** | **UNTESTED** | لا جلسات/مشاركون/قرار مكتمل. |
+| **MEDICAL REVIEW** | **UNVALIDATED** | لا مراجعة خارجية موثقة أو توقيع. |
+| **READY TO START UNITY** | **NOT YET** | Gate 0 والمراجعة الطبية/التعليمية مستقلتان عن ACCEPT المعماري. |
 
-لا تتحد هذه الأحكام إلى PASS واحد. لا يبدأ Unity قبل مراجعة Gate 0 والمحتوى ثم قرار صريح لاحق، ولا يبدأ cloud scale-out من المعمارية وحدها.
-
-## تم التحقق منه
+## IMPLEMENTED NOW
 
 | البند | الحالة | الدليل |
 |---|---|---|
-| Pulse 4.3.2 عند revision `e8a3649…` شُغل محليًا لمسارات S0 المحددة. | **VERIFIED** | [Gate A](../reports/002-pulse-gate-a.md) ومصفوفة ما بعد Gate A. |
-| Canonical snapshots خفيفة؛ checkpoint صريح فقط ينشئ artifact محرك داخل الجلسة. | **VERIFIED** للمسارات المختبرة | [مراجعة Runtime](../reports/005-pre-m3-runtime-hardening-review.md). |
-| فشل الطابور يحتفظ بالأوامر اللاحقة؛ يتحقق Runtime قبل أثر Pulse؛ `request_id` يمنع التكرار داخل الجلسة. | **VERIFIED** للمسارات المختبرة | اختبارات Runtime وPulse. |
-| عقد سيناريو 1.2 يرفض الحقول/الأنواع/التكرارات غير المدعومة ويقيد telemetry المرئية للمتعلم. | **VERIFIED** | `s0-scenario.schema.json` واختبارات contract. |
-| Facade لا يعيد الحقيقة الداخلية أو checkpoint أو telemetry الخفية، ويعرض manifest/snapshot/event/command DTOs صريحة. | **VERIFIED** | [تقرير 006](../reports/006-pre-unity-client-boundary-review.md) واختبارات Facade. |
-| النقل HTTP/JSON محلي على loopback فقط ولا يملك endpoint للساعة أو Pulse. | **VERIFIED** headless | [ADR-002](../decisions/ADR-002-local-client-facade-transport.md). |
-| VPE Host يملك تقدم الزمن؛ `PAUSED_BY_SYSTEM` لا يتقدم؛ لا catch-up بعد overrun. | **VERIFIED** للوحدة ومسار Pulse المحدد | [تقرير 006](../reports/006-pre-unity-client-boundary-review.md). |
-| tick `0.5s` يطابق تقدم Pulse المقاس؛ `0.25s` يتبدل بين 0.24/0.26s في البيئة المقاسة. | **OBSERVED** محليًا | [ملخص benchmark](../../artifacts/benchmarks/pre_unity_client_boundary_tick_policy/pulse_tick_summary.json). |
-| عقود platform UUIDv7-style وtenant/event/object storage مستقلة عن Runtime الحالي. | **VERIFIED** local/unit | [عقود المنصة](../contracts/platform-event-envelope-v0.1.md) و[Object Storage](../contracts/object-storage-contract-v0.1.md). |
-| SQLite outbox يثبت domain+event atomicity وpublisher failure/retry وduplicate crash window. | **VERIFIED** local semantics only | [Outbox spike](../validation/transactional-outbox-sqlite-spike.md). ليس PostgreSQL production implementation. |
-| الحزمة الكاملة شغلت مع Pulse الحقيقي بعد الحزمة المعمارية. | **VERIFIED** | **52 اختبارًا نجح في 25.268s**، منها **8** تكاملات Pulse SDK فعلية؛ لا توجد Pulse skips مقبولة كـPASS. |
+| S0 VPE يملك simulation time/queue، وPulse single-owner، وfailures تنقل إلى policy-safe status. | **VERIFIED** للمسارات المختبرة | تقارير runtime/Pulse واختبارات التكامل. |
+| Facade/DTOs لا تسرب internal truth/checkpoint/hidden telemetry؛ loopback HTTP/JSON محلي فقط. | **VERIFIED** headless | تقرير 006 وADR-002. |
+| tick 0.5s يطابق تقدم Pulse المقاس محليًا؛ 0.25s يتبدل 0.24/0.26s. | **OBSERVED** محليًا | benchmark tick؛ ليس SLA/FPS. |
+| UUIDv7-style IDs، tenant contracts، event/outbox/object storage reference semantics موجودة في `nexora_vpe.platform`. | **VERIFIED** local/unit | Python reference/test semantics، لا ownership claim لـGo production. |
+| `schemas/platform-event-envelope.schema.json` يحدد envelope محايدًا للغة؛ Python serializer يخرج `tenant_id` top-level. | **IMPLEMENTED / TESTED** | ADR-005 وPlatformEvent tests. |
+| SQLite outbox يثبت domain+event atomicity، retry، والـduplicate crash window. | **VERIFIED** local semantics only | outbox spike؛ ليس PostgreSQL/Go production relay. |
+| الحزمة الكاملة مع Pulse الحقيقي بعد تصحيح polyglot | **VERIFIED** | **53 اختبارًا نجح في 25.317s**، منها **8** تكاملات Pulse SDK فعلية و**0 skipped**؛ منها 10 platform-boundary tests. |
 
-## قيود ومخاطر مفتوحة
+## TARGET ARCHITECTURE
 
-| البند | الحالة | الأثر/المعالجة |
-|---|---|---|
-| Unity وFAST spatial resolver | **NOT IMPLEMENTED / DEFERRED** | لا يبدأان في هذه الدفعة. |
-| Gate 0 | **UNTESTED** | استخدم [حزمة Gate 0](../gate0/README.md) وفق اعتماد المؤسسة ثم وثق PASS/PIVOT/INCONCLUSIVE. |
-| مراجعة المحتوى الطبية/التعليمية | **UNVALIDATED** | أرسل [حزمة المراجعة](../validation/s0-medical-review-packet.md) لمراجع مستقل وسجل القرار. |
-| PostgreSQL/Redis/queue/broker/analytics/lake/NoSQL/vector/cloud | **DEFERRED BY DESIGN** | ترقية واحدة فقط لكل trigger موثق في [خارطة التوسع](../architecture/scale-roadmap-v0.1.md). |
-| session lease/handoff/recovery distributed | **DESIGNED, NOT IMPLEMENTED** | لا تدعي seamless resume أو active-active؛ يلزم `SIM-POOL-01`/`SIM-RECOVER-03` واختبارات. |
-| RLS وenterprise SSO | **NOT IMPLEMENTED** | RLS بعد role/context/test/runbook؛ SSO بعد requirements مؤسساتية. |
-| frame/render/network cost | **UNMEASURED** | benchmark headless لا يثبت FPS أو UnityWebRequest أو نظامًا مستهدفًا. |
-| checkpoint أو idempotency عبر جلسات/عمليات | **PARTIAL / ABSENT BY DESIGN** | outbox consumer idempotency contract موجود؛ لا durable session recovery workflow. |
-| صلاحية سريرية أو تقييم عالي العواقب | **PROHIBITED في S0** | Learning Mode تكويني فقط. |
+| domain | owner/language | owner data | scale boundary |
+|---|---|---|---|
+| Control Plane | Laravel/PHP | `control_plane.*` | stateless replicas by business API load. |
+| Platform/Realtime | Go | `platform.*`, `session_registry.*` | connections/RPS، leases، relay backlog. |
+| Simulation | Python + C++ Pulse | scoped session-local/runtime | active simulation sessions/resource profile. |
+| Client | C#/Unity future | لا truth authoritative | client distribution. |
+| AI/analytics | derived future workers/consumers | derived stores only | queue/model/partition workload. |
+
+**Hot path target:** future client → Go realtime/platform → Python VPE → C++ Pulse.
+**Control path target:** Laravel authorized transaction + owner outbox → Go allocation/registry → Python worker.
+**Async path target:** owner outbox → queue/bus at trigger → AI/analytics/reporting; لا يوقف simulation.
+
+## DEFERRED BY DESIGN
+
+| البند | الحد/trigger |
+|---|---|
+| Laravel Control Plane implementation | separate scope, schema ownership, RBAC/outbox/migration test package. |
+| Go Platform/Realtime implementation | separate contracts/registry/lease/fencing/observability/load-failure package. |
+| gRPC/Protobuf/WebSocket | contract/codegen compatibility spike and real remote-worker/realtime boundary. |
+| PostgreSQL/Redis/SQS/Kafka/ClickHouse/Iceberg/NoSQL/vector/cloud | named evidence triggers في roadmap؛ لا provision الآن. |
+| SSO/JWT/service identity stack | security/threat/rotation/revocation design قبل implementation. |
+| durable session recovery/handoff | `SIM-RECOVER-03` checkpoint/replay/compatibility proof. |
+| Unity/FAST/AI Patient | Unity waits for Gate 0/medical decision؛ AI clinical truth غير مسموح في S0. |
+
+## UNVALIDATED OR UNMEASURED
+
+| البند | الحالة |
+|---|---|
+| Gate 0 | **UNTESTED**. |
+| medical/educational review | **UNVALIDATED**. |
+| production language/service capacity | **UNMEASURED**؛ لا benchmark language claims. |
+| frame/render/network Unity cost | **UNMEASURED**. |
+| distributed lease/handoff/recovery | **DESIGNED, NOT IMPLEMENTED**. |
+| PostgreSQL RLS/role model and enterprise SSO | **NOT IMPLEMENTED**. |
 
 ## القرارات السارية
 
-1. يثبت revision Pulse؛ أي تحديث يحتاج إعادة دليل Gate A والمسار الإنتاجي.
-2. VPE يملك الزمن وترتيب الأوامر والوصول إلى Pulse؛ Unity المستقبلي لا يصل إلى Pulse أو `PulseAdapter` مباشرة.
-3. client projection لا يعيد snapshot داخليًا أو checkpoint أو hidden telemetry/pathology.
-4. النقل المحلي المختار HTTP/JSON loopback؛ DTOs وFacade يبقيان قابلين للاستبدال.
-5. `request_id` يحمي داخل جلسة Runtime فقط؛ لا retry أعمى بعد نتيجة غامضة.
-6. سياسة host المختارة 1× عند 0.5 ثانية، من دون catch-up؛ لا تدعي أنها عامة خارج البيئة المقاسة.
-7. Control Plane وSimulation Data Plane منفصلان ownership-wise؛ analytics/AI لا توقفان simulation ولا تملكان truth.
-8. PostgreSQL هو OLTP authoritative target؛ `jsonb` محدود، artifacts references فقط، وoutbox يسبق queue/broker.
-9. لا يبدأ Unity حتى Gate 0 والمراجعة الطبية/التعليمية وقرار بدء مستقل. لا يبدأ scale infrastructure من دون trigger/ADR/اختبار تشغيلي.
+1. S0 VPE/Pulse ownership لا يتغير؛ Python لا يعاد كتابته، وC++ Pulse لا يصل إليه client مباشرة.
+2. Laravel هو target Control Plane owner؛ Go هو target Platform/Realtime owner عند evidence؛ Python platform helpers تبقى reference/test semantics حتى implementation Go مصادق عليه.
+3. one logical owner per PostgreSQL schema/table؛ لا Laravel↔Go↔Python shared writes.
+4. owner mutation + outbox atomically؛ لا Laravel DB commit + unreliable direct Go call؛ consumers idempotent.
+5. REST/JSON public، WebSocket realtime future via Go، gRPC/Protobuf candidate internal؛ S0 loopback HTTP/JSON unchanged.
+6. analytics/AI/cache/object store لا تملك simulation truth ولا توقف hot path.
+7. لا يبدأ Unity حتى Gate 0 والمراجعة الطبية/التعليمية وقرار مستقل.
 
 ## أحدث الأدلة
 
-- [تقرير 007: مراجعة Scale-Ready](../reports/007-scale-architecture-review.md).
-- [Platform Scale Target](../architecture/platform-scale-target-v0.1.md)، [Data Platform](../architecture/data-platform-v0.1.md)، و[خارطة التوسع](../architecture/scale-roadmap-v0.1.md).
-- [Multi-Tenant Model](../architecture/multi-tenant-model-v0.1.md)، [Session Scaling](../architecture/simulation-session-scaling-v0.1.md)، و[Capacity Model](../architecture/capacity-model-v0.1.md).
-- [ADR-003](../decisions/ADR-003-service-boundaries-and-language-ownership.md) إلى [ADR-006](../decisions/ADR-006-object-storage-artifact-strategy.md).
-- [Outbox SQLite Spike](../validation/transactional-outbox-sqlite-spike.md) و[عقد Platform Event](../contracts/platform-event-envelope-v0.1.md).
-- [تقرير حدود العميل قبل Unity](../reports/006-pre-unity-client-boundary-review.md)، [حزمة Gate 0](../gate0/README.md)، و[حزمة المراجعة الطبية](../validation/s0-medical-review-packet.md).
+- [تقرير 007: مراجعة Polyglot Scale-Ready](../reports/007-scale-architecture-review.md).
+- [Polyglot Target](../architecture/polyglot-platform-target-v0.1.md) و[Data/Deployables](../architecture/polyglot-data-and-deployables-v0.1.md).
+- [ADR-003](../decisions/ADR-003-polyglot-backend-and-service-boundaries.md)، [ADR-004](../decisions/ADR-004-platform-data-ownership.md)، [ADR-005](../decisions/ADR-005-cross-language-contracts.md)، و[ADR-006](../decisions/ADR-006-object-storage-artifact-strategy.md).
+- [Polyglot source notes](../research/polyglot-platform-source-notes.md)، [portable event schema](../../schemas/platform-event-envelope.schema.json)، و[platform event contract](../contracts/platform-event-envelope-v0.1.md).
+- [Gate 0](../gate0/README.md)، [medical review packet](../validation/s0-medical-review-packet.md)، و[report 006](../reports/006-pre-unity-client-boundary-review.md).
 
-## الخطوة التالية المخططة
+## الخطوة التالية
 
-**تتوقف هذه الدفعة للمراجعة.** إذا اعتمدت المعمارية ونطاق المنتج، تبدأ دفعة مستقلة لـControl Plane PostgreSQL: schema/migrations، role/tenant authorization model، production outbox adapter، load/failure tests، وrunbooks. لا تبدأ Unity أو Kafka/ClickHouse/Kubernetes أو cloud provisioning في نفس القرار؛ وتبقى Gate 0 والمراجعة الطبية/التعليمية prerequisites مستقلة لأي قرار Unity.
+**تتوقف هذه الدفعة للمراجعة.** إذا قبل المراجع القرار، تبدأ دفعة Laravel Control Plane أو Go Platform Plane منفصلة ومحدودة مع contract/schema/owner/failure/load/runbook evidence. لا تبدأ Unity أو Kafka/ClickHouse/Kubernetes/cloud provisioning في القرار نفسه، ولا تفسر READY architecture على أنها Gate 0 أو medical PASS.
