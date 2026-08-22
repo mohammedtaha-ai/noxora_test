@@ -43,6 +43,11 @@ class VpeRuntimeTests(unittest.TestCase):
         self.assertEqual(frozenset({"INTERNAL_BLEEDING"}), loaded.allowed_clinical_hypotheses)
         self.assertEqual(frozenset({"VITALS", "FAST"}), loaded.allowed_observation_ids())
         self.assertEqual("free_fluid_positive", loaded.observations["FAST"].controlled_finding)
+        self.assertEqual("Abdominal trauma", loaded.client_title)
+        self.assertEqual(
+            ("heart_rate_bpm", "mean_arterial_pressure_mmhg", "oxygen_saturation"),
+            loaded.learner_visible_telemetry,
+        )
         self.assertEqual((), loaded.completion_success_rules)
         self.assertEqual((), loaded.completion_failure_rules)
         self.assertIn("blood_packed_rbc", loaded.interventions)

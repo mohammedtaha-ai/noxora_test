@@ -72,6 +72,8 @@ class S0Scenario:
     interventions: Mapping[str, InterventionDefinition]
     escalations: Mapping[str, EscalationDefinition]
     telemetry_keys: tuple[str, ...]
+    client_title: str
+    learner_visible_telemetry: tuple[str, ...]
     completion_success_rules: tuple[str, ...]
     completion_failure_rules: tuple[str, ...]
     mode: str = "learning"
@@ -103,6 +105,12 @@ class S0Scenario:
                 raise ValueError("Scenario contains an unsupported observation")
             if definition.enabled and not definition.controlled_finding:
                 raise ValueError("Enabled authored observations require a controlled finding")
+        if not self.client_title:
+            raise ValueError("Scenario requires a learner-visible title")
+        if not self.learner_visible_telemetry:
+            raise ValueError("Scenario requires learner-visible telemetry")
+        if not set(self.learner_visible_telemetry).issubset(self.telemetry_keys):
+            raise ValueError("Learner-visible telemetry must be a subset of internal telemetry")
         if self.completion_success_rules or self.completion_failure_rules:
             raise ValueError("S0 completion rules must remain empty in learning mode")
         if not self.interventions:
@@ -190,6 +198,12 @@ def splenic_hemorrhage_learning_scenario() -> S0Scenario:
             "mean_arterial_pressure_mmhg",
             "blood_volume_ml",
             "total_hemorrhaged_volume_ml",
+            "oxygen_saturation",
+        ),
+        client_title="Abdominal trauma",
+        learner_visible_telemetry=(
+            "heart_rate_bpm",
+            "mean_arterial_pressure_mmhg",
             "oxygen_saturation",
         ),
         completion_success_rules=(),

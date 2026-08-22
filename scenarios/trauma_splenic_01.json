@@ -71,6 +71,14 @@
     "total_hemorrhaged_volume_ml",
     "oxygen_saturation"
   ],
+  "client_view": {
+    "title": "Abdominal trauma",
+    "visible_telemetry": [
+      "heart_rate_bpm",
+      "mean_arterial_pressure_mmhg",
+      "oxygen_saturation"
+    ]
+  },
   "completion": {
     "success_rules": [],
     "failure_rules": []

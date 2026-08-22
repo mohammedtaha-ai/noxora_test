@@ -29,6 +29,7 @@ _TOP_LEVEL_KEYS = frozenset(
         "interventions",
         "escalations",
         "telemetry",
+        "client_view",
         "completion",
     }
 )
@@ -82,6 +83,7 @@ def _validate_raw_contract(raw: object) -> Mapping[str, Any]:
     observations = _exact_keys(scenario["observations"], frozenset({"allowed"}), "observations")
     interventions = _exact_keys(scenario["interventions"], frozenset({"allowed"}), "interventions")
     escalations = _exact_keys(scenario["escalations"], frozenset({"allowed"}), "escalations")
+    _exact_keys(scenario["client_view"], frozenset({"title", "visible_telemetry"}), "client_view")
     _exact_keys(scenario["completion"], frozenset({"success_rules", "failure_rules"}), "completion")
 
     observation_items = _list(observations["allowed"], "observations.allowed")
@@ -137,6 +139,7 @@ def load_s0_scenario(path: str | Path) -> S0Scenario:
             for item in raw["observations"]["allowed"]
         }
         completion = raw["completion"]
+        client_view = raw["client_view"]
         scenario = S0Scenario(
             scenario_id=raw["id"],
             title=raw["title"],
@@ -151,6 +154,8 @@ def load_s0_scenario(path: str | Path) -> S0Scenario:
             interventions=interventions,
             escalations=escalations,
             telemetry_keys=tuple(raw["telemetry"]),
+            client_title=client_view["title"],
+            learner_visible_telemetry=tuple(client_view["visible_telemetry"]),
             completion_success_rules=tuple(completion["success_rules"]),
             completion_failure_rules=tuple(completion["failure_rules"]),
             mode=raw["mode"],

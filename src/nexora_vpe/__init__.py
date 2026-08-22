@@ -10,6 +10,19 @@ from .runtime import VpeRuntime
 from .scenario import S0Scenario
 from .scenario_io import load_s0_scenario
 from .pulse_adapter import PulseAdapter, PulseAdapterConfig, PulseAdapterError
+from .client_facade import VpeClientFacade
+from .client_contracts import (
+    ClientCommandStatus,
+    ClientError,
+    ClientErrorCode,
+    ClientEvent,
+    ClientRuntimeState,
+    ClientScenarioManifest,
+    ClientSnapshot,
+    CommandAccepted,
+    CommandOutcome,
+    CommandRequest,
+)
 
 __all__ = [
     "DeterministicPhysiologyAdapter",
@@ -20,4 +33,15 @@ __all__ = [
     "PulseAdapter",
     "PulseAdapterConfig",
     "PulseAdapterError",
+    "VpeClientFacade",
+    "ClientCommandStatus",
+    "ClientError",
+    "ClientErrorCode",
+    "ClientEvent",
+    "ClientRuntimeState",
+    "ClientScenarioManifest",
+    "ClientSnapshot",
+    "CommandAccepted",
+    "CommandOutcome",
+    "CommandRequest",
 ]
