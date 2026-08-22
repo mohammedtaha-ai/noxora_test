@@ -46,15 +46,17 @@
 
 ## أحدث الالتزامات ذات الصلة
 
+[`5f645bd`](https://github.com/mohammedtaha-ai/noxora_test/commit/5f645bd85f01fb10399af2f6ff987f0740c62499) — `docs(research): add Pulse Gate A pre-experiment evidence`، دُفع وتحقق المرجع البعيد في `origin/manus/s0-foundation`.
+
 [`43f6307`](https://github.com/mohammedtaha-ai/noxora_test/commit/43f63079d73b3d0e9252d73d8868543772894952) — `docs(status): record repository audit push verification`، دُفع وتحقق المرجع البعيد في `origin/manus/s0-foundation`.
 
 [`3d16ce6`](https://github.com/mohammedtaha-ai/noxora_test/commit/3d16ce60897dc1552548a2fe8f14a7dfc7609f3b) — `docs: bootstrap repository audit and status`.
 
 ## الخطوات التالية
 
-1. التزام ودفع نقطة بحث Pulse/B0، ثم توثيق مرجعها.
-2. تثبيت مصدر Pulse قابل للبناء وفحص واجهة النزف والمواد المتاحة دون تخمين.
-3. بناء وتشغيل أصغر تجربة Pulse رأسية قابلة للتكرار وتوثيق ناتجها الحقيقي.
+1. تثبيت مصدر Pulse قابل للبناء وفحص واجهة النزف والمواد المتاحة دون تخمين.
+2. بناء وتشغيل أصغر تجربة Pulse رأسية قابلة للتكرار وتوثيق ناتجها الحقيقي.
+3. إضافة نتائج التجربة ومصفوفة Gate A المحدثة، ثم تقرير/ADR فقط وفق الأدلة.
 
 ## المخاطر وضغط النطاق
 
