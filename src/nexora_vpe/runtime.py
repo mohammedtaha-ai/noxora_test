@@ -117,6 +117,22 @@ class VpeRuntime:
             )
             return
 
+        if command.kind == CommandKind.RECORD_ESCALATION:
+            escalation_id = command.payload.get("escalation_id")
+            if not isinstance(escalation_id, str):
+                raise ValueError("record_escalation requires escalation_id")
+            definition = self.scenario.escalation(escalation_id)
+            self._emit(
+                EventType.ESCALATION_RECORDED,
+                actor=command.actor,
+                source="scenario_runtime",
+                payload={
+                    "command_id": command.command_id,
+                    "escalation_id": definition.escalation_id,
+                },
+            )
+            return
+
         if command.kind == CommandKind.APPLY_INTERVENTION:
             intervention_id = command.payload.get("intervention_id")
             if not isinstance(intervention_id, str):

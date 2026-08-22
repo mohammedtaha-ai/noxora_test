@@ -10,6 +10,7 @@
 | `E-HISTORY` | نية تاريخ منظمة | `clinical.intent.recorded` | debrief | يوثق النية المختارة، لا جودة الحوار الحر. |
 | `E-OBSERVATION` | طلب ملاحظة من السيناريو | `observation.requested` | debrief، واجهة مستقبلية | لا يساوي نتيجة فحص حر قبل وجود resolver محدد. |
 | `E-FAST` | resolver + finding مضبوط بالسيناريو | `fast.acquisition.recorded` | debrief | مؤجل حتى مرحلة FAST؛ لا يمثل تصويرًا طبيًا حرًا. |
+| `E-ESCALATION` | معرف مصرح به في قاموس السيناريو | `escalation.recorded` | timeline، debrief | يثبت نية منظمة فقط؛ لا يغير Pulse ولا يثبت ملاءمة القرار واقعيًا. |
 | `E-INTERVENTION` | أمر مقبول وقاموس تدخلات | `intervention.applied` | Pulse adapter، timeline | قبول المحرك ليس توصية أو مصادقة طبية. |
 | `E-TIMELINE` | ساعة VPE وتسلسل أوامر | جميع أحداث envelope | replay، debrief | زمن محاكاة فقط؛ لا يضم زمن شبكي أو LLM. |
 | `E-CHECKPOINT` | snapshot وحالة فرع | `checkpoint.created` | retry/debug | الاستعادة مشروطة بإصدار المحرك وعقد adapter. |

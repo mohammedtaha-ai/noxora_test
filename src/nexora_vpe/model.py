@@ -19,6 +19,7 @@ class CommandKind(str, Enum):
     ADVANCE_TIME = "advance_time"
     RECORD_HISTORY_INTENT = "record_history_intent"
     REQUEST_OBSERVATION = "request_observation"
+    RECORD_ESCALATION = "record_escalation"
     APPLY_INTERVENTION = "apply_intervention"
     CREATE_CHECKPOINT = "create_checkpoint"
     RESTORE_CHECKPOINT = "restore_checkpoint"

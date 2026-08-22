@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .scenario import InterventionDefinition, S0Scenario
+from .scenario import EscalationDefinition, InterventionDefinition, S0Scenario
 
 
 def load_s0_scenario(path: str | Path) -> S0Scenario:
@@ -22,6 +22,10 @@ def load_s0_scenario(path: str | Path) -> S0Scenario:
             )
             for item in raw["interventions"]["allowed"]
         }
+        escalations = {
+            item["id"]: EscalationDefinition(escalation_id=item["id"])
+            for item in raw["escalations"]["allowed"]
+        }
         scenario = S0Scenario(
             scenario_id=raw["id"],
             title=raw["title"],
@@ -31,6 +35,7 @@ def load_s0_scenario(path: str | Path) -> S0Scenario:
             hemorrhage_flow_rate_ml_min=float(pathology["flow_rate_ml_min"]),
             allowed_history_intents=frozenset(raw["history"]["allowed_intents"]),
             interventions=interventions,
+            escalations=escalations,
             telemetry_keys=tuple(raw["telemetry"]),
             mode=raw["mode"],
             schema_version=raw["schema_version"],

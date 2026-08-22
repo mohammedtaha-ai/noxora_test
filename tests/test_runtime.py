@@ -19,9 +19,11 @@ class VpeRuntimeTests(unittest.TestCase):
         project_root = Path(__file__).resolve().parents[1]
         loaded = load_s0_scenario(project_root / "scenarios" / "trauma_splenic_01.json")
         self.assertEqual("trauma_splenic_01", loaded.scenario_id)
+        self.assertEqual("1.1", loaded.schema_version)
         self.assertEqual("learning", loaded.mode)
         self.assertEqual("Spleen", loaded.hemorrhage_compartment)
         self.assertIn("blood_packed_rbc", loaded.interventions)
+        self.assertIn("trauma_team_escalation", loaded.escalations)
 
     def test_start_bootstraps_existing_pathology_and_publishes_snapshot(self) -> None:
         self.assertEqual(RuntimeState.RUNNING, self.runtime.state)
@@ -48,6 +50,33 @@ class VpeRuntimeTests(unittest.TestCase):
         self.runtime.submit(CommandKind.REQUEST_OBSERVATION, "learner", {"observation_id": "FAST"})
         self.runtime.drain()
         self.assertEqual(0.0, self.runtime.simulation_time_s)
+
+    def test_records_scenario_authorized_escalation_without_mutating_physiology(self) -> None:
+        before_snapshot_count = len(self.runtime.snapshots())
+        self.runtime.submit(
+            CommandKind.RECORD_ESCALATION,
+            "learner",
+            {"escalation_id": "trauma_team_escalation"},
+        )
+        new_events = self.runtime.drain()
+
+        self.assertEqual(1, len(new_events))
+        event = new_events[0]
+        self.assertEqual(EventType.ESCALATION_RECORDED, event.event_type)
+        self.assertEqual("scenario_runtime", event.source)
+        self.assertEqual("trauma_team_escalation", event.payload["escalation_id"])
+        self.assertEqual(0.0, event.simulation_time_s)
+        self.assertEqual(0.0, self.runtime.simulation_time_s)
+        self.assertEqual(before_snapshot_count, len(self.runtime.snapshots()))
+
+    def test_rejects_unapproved_escalation(self) -> None:
+        self.runtime.submit(
+            CommandKind.RECORD_ESCALATION,
+            "learner",
+            {"escalation_id": "unapproved_destination"},
+        )
+        with self.assertRaisesRegex(ValueError, "Escalation not allowed by scenario"):
+            self.runtime.drain()
 
     def test_intervention_then_time_advance_publishes_ordered_evidence(self) -> None:
         self.runtime.submit(CommandKind.APPLY_INTERVENTION, "learner", {"intervention_id": "crystalloid_saline"})

@@ -10,7 +10,7 @@
 | `intervention.apply` | تدخل من قاموس محدود | معرف تدخل وparameters مصادق عليها | يضع أمر adapter مرتبًا | `intervention.applied` + لقطة | قابل للتنفيذ بعقد adapter |
 | `checkpoint.create` | نقطة استعادة | اسم checkpoint مصادق عليه | يطلب حفظ adapter | `checkpoint.created` + لقطة | قابل للتنفيذ بعقد adapter |
 | `fast.acquire` | FAST spatial | نتيجة resolver مستقبلية | لا يغير Pulse | `fast.acquisition.recorded` | مؤجل إلى M4 |
-| `escalation.record` | تصعيد منظم | معرف تصعيد محدود | لا يغير Pulse | `escalation.recorded` | مؤجل عن مسار المحرك الأول |
+| `escalation.record` | تصعيد منظم | معرف مصرح به في `escalations.allowed` | لا يغير Pulse أو زمن VPE | `escalation.recorded` | قابل للتنفيذ headless |
 
 ## قاموس التاريخ الأولي
 
@@ -18,4 +18,4 @@
 
 ## التفاعلات المؤجلة صراحة
 
-لا تنفذ هذه المرحلة إنشاء إصابة، جراحة، قطع نسيج، خياطة، haptics، استكشاف تشريحي حر، إجراءات IV مكانية، تصوير فيزيائي حر، أو محادثة LLM. لا توجد طبقة Unity عاملة في هذا المستودع بعد؛ سيبقى أي عميل مستقبلي مستهلكًا لأوامر VPE فقط.
+لا تنفذ هذه المرحلة إنشاء إصابة، جراحة، قطع نسيج، خياطة، haptics، استكشاف تشريحي حر، إجراءات IV مكانية، تصوير فيزيائي حر، أو محادثة LLM. لا توجد طبقة Unity عاملة في هذا المستودع بعد؛ يظل FAST spatial مؤجلًا إلى M4، بينما يبقى أي عميل مستقبلي مستهلكًا لأوامر VPE فقط.

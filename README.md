@@ -13,6 +13,7 @@ Nexora VPE هو أساس **محاكاة تعليمية تكوينية** لمري
 | حفظ/استعادة Pulse | **VERIFIED** | تطابق رقمي في 121 صفًا متداخلًا؛ انظر التقرير. |
 | نواة S0 headless | **IMPLEMENTED + TESTED** بعقد أوامر منظم وبديل حتمي لاختبارات الوحدة | [`src/nexora_vpe/`](src/nexora_vpe/). |
 | PulseAdapter إنتاجي | **IMPLEMENTED + INTEGRATION TESTED** مع عملية Pulse واحدة وrevision pin وcheckpoint | [عقد العملية](docs/contracts/pulse-adapter-process-contract.md) و[تقرير التكامل](docs/reports/004-pulse-adapter-integration.md). |
+| تصعيد منظم في S0 | **IMPLEMENTED + TESTED** بمعرف مؤلف ودليل حدث؛ لا يغير Pulse أو الزمن | [عقد التصعيد](docs/contracts/s0-escalation-contract.md). |
 | Bridge C++ مباشر إلى SDK Pulse | **VERIFIED** محليًا | [`src/physiology/pulse_bridge/`](src/physiology/pulse_bridge/) وartifact صغير. |
 | Unity وFAST ثلاثي الأبعاد وLLM | **DEFERRED** | خارج مرحلة النواة headless. |
 | صلاحية سريرية أو تقييم high-stakes | **NOT IMPLEMENTED** | خارج نطاق S0. |
@@ -48,7 +49,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 PYTHONPATH=src python3 scripts/run_s0_demo.py
 ```
 
-ينتج العرض artifact صغيرًا في `artifacts/representative-small-results/s0_runtime_demo.json`. هذا العرض **هندسي تكويني فقط** ويستخدم `DeterministicPhysiologyAdapter`، لا نموذجًا سريريًا.
+ينتج العرض artifact صغيرًا في `artifacts/representative-small-results/s0_runtime_demo.json`. هذا العرض **هندسي تكويني فقط** ويستخدم `DeterministicPhysiologyAdapter`، لا نموذجًا سريريًا. تدعم النواة كذلك `record_escalation` لمعرف موجود في قاموس السيناريو؛ يوثق الفعل كدليل ولا يغير Pulse أو زمن المحاكاة، كما يبين [عقد التصعيد](docs/contracts/s0-escalation-contract.md).
 
 ### 2. PulseAdapter واختبارات التكامل الإنتاجية
 
@@ -98,7 +99,7 @@ sha256sum --check SHA256SUMS.txt
 
 ## الحدود الحالية
 
-لا توجد واجهة Unity، أو resolver لـ FAST، أو محادثة LLM، أو debrief، أو إدارة مستخدمين، أو authoring UI في هذه المرحلة. لا تُقرأ الأحداث المنظمة على أنها تقييم للكفاءة؛ فهي مواد تغذية راجعة تكوينية مستقبلية فقط. لا يجوز استخدام قيم Pulse أو السيناريوهات المحفوظة لتوجيه علاج أو اتخاذ قرار عن شخص حقيقي.
+لا توجد واجهة Unity، أو resolver لـ FAST، أو محادثة LLM، أو debrief، أو إدارة مستخدمين، أو authoring UI في هذه المرحلة. التصعيد المتاح هنا حدث منظم headless فقط، وليس تكاملًا تشغيليًا مع فريق أو خدمة خارجية. لا تُقرأ الأحداث المنظمة على أنها تقييم للكفاءة؛ فهي مواد تغذية راجعة تكوينية مستقبلية فقط. لا يجوز استخدام قيم Pulse أو السيناريوهات المحفوظة لتوجيه علاج أو اتخاذ قرار عن شخص حقيقي.
 
 ## الترخيص
 

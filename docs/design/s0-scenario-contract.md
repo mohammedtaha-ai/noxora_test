@@ -1,4 +1,4 @@
-# عقد سيناريو S0 — v1
+# عقد سيناريو S0 — v1.1
 
 ## الغرض
 
@@ -7,7 +7,7 @@
 ## نموذج السيناريو
 
 ```yaml
-schema_version: "1.0"
+schema_version: "1.1"
 id: "trauma_splenic_01"
 title: "Abdominal trauma: active splenic hemorrhage"
 mode: "learning"
@@ -43,6 +43,9 @@ interventions:
       pulse_compound: "PackedRBC"
       volume_ml: 250
       rate_ml_min: 5
+escalations:
+  allowed:
+    - id: "trauma_team_escalation"
 telemetry:
   - "heart_rate_bpm"
   - "mean_arterial_pressure_mmhg"
@@ -62,11 +65,12 @@ completion:
 | النزف جزء من `pathology` عند البدء لا من أمر المتعلم. | الإصابة موجودة قبل البداية. |
 | التدخلات تشير إلى قاموس محدود. | يمنع إرسال نصوص أو أوامر Pulse خامة. |
 | قائمة telemetry عبارة عن مفاتيح داخلية مسموحة. | تفصل واجهة S0 عن أسماء أعمدة Pulse. |
+| `escalations.allowed` قاموس غير فارغ من معرفات ثابتة. | يمنع نصوص التصعيد الحرة ويحفظ دليلًا قابلًا للمراجعة. |
 | لا توجد قواعد نجاح/فشل في S0. | يبقى التقييم تكوينيًا. |
 
 ## عقد الحدث
 
-يلزم أن يطابق كل حدث مخطط `schemas/event-envelope.schema.json` وأن يحتوي على: `event_id`، `scenario_id`، `simulation_time_s`، `event_type`، `actor`، `payload`، `source`، و`schema_version`. يرفض runtime الأنواع غير المعروفة أو الأفعال غير المبررة بعقد السيناريو.
+يلزم أن يطابق كل حدث مخطط `schemas/event-envelope.schema.json` وأن يحتوي على: `event_id`، `scenario_id`، `simulation_time_s`، `event_type`، `actor`، `payload`، `source`، و`schema_version`. يرفض runtime الأنواع غير المعروفة أو الأفعال غير المبررة بعقد السيناريو. بالنسبة إلى التصعيد، يقبل `record_escalation` معرفًا موجودًا في `escalations.allowed` وينشر `escalation.recorded` مع `command_id` و`escalation_id` فقط؛ لا يغير هذا المسار Pulse أو الزمن أو حالة النجاح/الفشل.
 
 ## عقد adapter
 

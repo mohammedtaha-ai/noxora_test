@@ -38,6 +38,17 @@ class InterventionDefinition:
 
 
 @dataclass(frozen=True)
+class EscalationDefinition:
+    """A scenario-authored, non-physiology escalation option.
+
+    The identifier is authoritative evidence only. It neither changes Pulse state
+    nor represents a real-world recommendation, disposition, or clinical outcome.
+    """
+
+    escalation_id: str
+
+
+@dataclass(frozen=True)
 class S0Scenario:
     scenario_id: str
     title: str
@@ -47,12 +58,13 @@ class S0Scenario:
     hemorrhage_flow_rate_ml_min: float
     allowed_history_intents: frozenset[str]
     interventions: Mapping[str, InterventionDefinition]
+    escalations: Mapping[str, EscalationDefinition]
     telemetry_keys: tuple[str, ...]
     mode: str = "learning"
-    schema_version: str = "1.0"
+    schema_version: str = "1.1"
 
     def validate(self) -> None:
-        if self.schema_version != "1.0":
+        if self.schema_version != "1.1":
             raise ValueError("Unsupported scenario schema version")
         if self.mode != "learning":
             raise ValueError("S0 supports learning mode only")
@@ -71,12 +83,23 @@ class S0Scenario:
                 raise ValueError("S0 intervention maps to an unsupported Pulse compound")
             if definition.volume_ml <= 0 or definition.rate_ml_min <= 0:
                 raise ValueError("Intervention volume and rate must be positive")
+        if not self.escalations:
+            raise ValueError("Scenario requires at least one structured escalation option")
+        for escalation_id, definition in self.escalations.items():
+            if not escalation_id or escalation_id != definition.escalation_id:
+                raise ValueError("Escalation definitions must use non-empty matching identifiers")
 
     def intervention(self, intervention_id: str) -> InterventionDefinition:
         try:
             return self.interventions[intervention_id]
         except KeyError as exc:
             raise ValueError(f"Intervention not allowed by scenario: {intervention_id}") from exc
+
+    def escalation(self, escalation_id: str) -> EscalationDefinition:
+        try:
+            return self.escalations[escalation_id]
+        except KeyError as exc:
+            raise ValueError(f"Escalation not allowed by scenario: {escalation_id}") from exc
 
 
 def splenic_hemorrhage_learning_scenario() -> S0Scenario:
@@ -103,6 +126,11 @@ def splenic_hemorrhage_learning_scenario() -> S0Scenario:
                 volume_ml=250.0,
                 rate_ml_min=5.0,
             ),
+        },
+        escalations={
+            "trauma_team_escalation": EscalationDefinition(
+                escalation_id="trauma_team_escalation"
+            )
         },
         telemetry_keys=(
             "heart_rate_bpm",

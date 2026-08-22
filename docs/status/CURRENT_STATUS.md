@@ -16,9 +16,10 @@
 | يقبل Pulse `Saline` و`PackedRBC` بوصفهما تدخلات مادة محددة في سيناريوهات محلية. | **VERIFIED** | CSVs الخام وتقرير Gate A. |
 | حفظ/استعادة حالة نزف نشط ثم متابعة التشغيل. | **VERIFIED** مع ملاحظة زمنية | تطابق 121 صف CSV متداخل، وbridge يطابق الاستمرارية تمامًا. |
 | توجد نواة S0 headless ذات ساعة VPE وطابور أوامر وعقد سيناريو ومخزن أحداث/لقطات. | **IMPLEMENTED + TESTED** | [`src/nexora_vpe/`](../../src/nexora_vpe/) و[تقرير التحقق](../reports/003-s0-core-verification.md). |
-| رفض أفعال/نوايا غير معتمدة، وحفظ/استعادة checkpoint داخل النواة، وترتيب الأوامر. | **VERIFIED** | 8 اختبارات `unittest` موثقة في تقرير التحقق. |
+| رفض أفعال/نوايا غير معتمدة، وحفظ/استعادة checkpoint داخل النواة، وترتيب الأوامر. | **VERIFIED** | 10 اختبارات `unittest` لنواة S0، منها اختبارات التصعيد المنظم. |
 | bridge C++ يربط Pulse SDK مباشرة ويحمل الحالة ويطبق نزفًا طحاليًا ويحفظ ويستعيد. | **VERIFIED** | [`src/physiology/pulse_bridge/`](../../src/physiology/pulse_bridge/) وartifact المصغر. |
 | `PulseAdapter` الإنتاجي يملك عملية Pulse واحدة ويتحقق من revision، ويطبق زمن S0 وتدخلاته المقيدة وcheckpoint والاستعادة. | **IMPLEMENTED + INTEGRATION TESTED** | [عقد العملية](../contracts/pulse-adapter-process-contract.md) و[تقرير التكامل](../reports/004-pulse-adapter-integration.md). |
+| التصعيد المنظم يقبل فقط معرفًا مؤلفًا في السيناريو وينشر دليلاً بلا تغيير Pulse أو زمن VPE أو اللقطة. | **IMPLEMENTED + TESTED** | [عقد التصعيد](../contracts/s0-escalation-contract.md)؛ 15 اختبارًا كاملاً مرّت مع Pulse SDK. |
 | بروتوكول Gate 0 موجود مع ضوابط ومعايير Pivot/Stop. | **VERIFIED** كوثيقة تصميم فقط | [بروتوكول Gate 0](../research/gate-0-value-discovery-protocol.md). |
 
 ## ملاحظات ومخاطر مثبتة
@@ -54,6 +55,7 @@
 - [Gate A](../reports/002-pulse-gate-a.md) — البناء والتجارب والنتائج والحدود.
 - [تحقق نواة S0 والـbridge](../reports/003-s0-core-verification.md) — اختبارات runtime وSDK المباشر.
 - [تكامل PulseAdapter](../reports/004-pulse-adapter-integration.md) و[عقد العملية](../contracts/pulse-adapter-process-contract.md) — عملية SDK طويلة العمر واختبارات المسار الكامل.
+- [عقد التصعيد المنظم](../contracts/s0-escalation-contract.md) — قاموس مؤلف، حدث دليل، وقيود عدم تغيير الفيزيولوجيا.
 - [`summary.md`](../../experiments/pulse_gate_a/results/2026-08-22/summary.md) و[`SHA256SUMS.txt`](../../experiments/pulse_gate_a/results/2026-08-22/SHA256SUMS.txt) — أدلة Gate A الحتمية.
 - [`pulse_sdk_bridge.json`](../../artifacts/representative-small-results/pulse_sdk_bridge.json) و[`s0_runtime_demo.json`](../../artifacts/representative-small-results/s0_runtime_demo.json) — artifacts تمثيلية صغيرة.
 - [provenance والترخيص](../research/pulse-provenance-and-license.md) — مصدر Pulse والالتزامات التي يلزم مراجعتها.
