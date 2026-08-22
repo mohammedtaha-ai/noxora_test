@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import math
+import re
 from typing import Any, Mapping
 
 from .adapter import PhysiologyAdapter
@@ -28,6 +29,8 @@ class VpeRuntime:
     _event_counter: int = 0
     _snapshot_counter: int = 0
     _submitted_counter: int = 0
+    _requests: dict[str, Command] = field(default_factory=dict)
+    _request_outcomes: dict[str, tuple[Event, ...]] = field(default_factory=dict)
 
     def start(self) -> None:
         self.scenario.validate()
@@ -41,7 +44,25 @@ class VpeRuntime:
     def simulation_time_s(self) -> float:
         return self.adapter.simulation_time_s
 
-    def submit(self, kind: CommandKind, actor: str, payload: Mapping[str, Any]) -> str:
+    def submit(
+        self,
+        kind: CommandKind,
+        actor: str,
+        payload: Mapping[str, Any],
+        request_id: str | None = None,
+    ) -> str:
+        """Queue a command or return the existing command for a stable request id.
+
+        The runtime de-duplicates only within its current in-memory session. A
+        duplicate with different semantics is rejected rather than re-executed.
+        """
+        if request_id is not None:
+            self._validate_request_id(request_id)
+            existing = self._requests.get(request_id)
+            if existing is not None:
+                if existing.kind != kind or existing.actor != actor or dict(existing.payload) != dict(payload):
+                    raise ValueError("request_id is already bound to a different command")
+                return existing.command_id
         if self.state != RuntimeState.RUNNING:
             raise RuntimeError("Commands are accepted only while the runtime is RUNNING")
         self._submitted_counter += 1
@@ -51,8 +72,11 @@ class VpeRuntime:
             actor=actor,
             payload=dict(payload),
             submitted_order=self._submitted_counter,
+            request_id=request_id,
         )
         self._queue.append(command)
+        if request_id is not None:
+            self._requests[request_id] = command
         return command.command_id
 
     def drain(self) -> tuple[Event, ...]:
@@ -63,14 +87,21 @@ class VpeRuntime:
         pending = sorted(self._queue, key=lambda command: command.submitted_order)
         self._queue = []
         for index, command in enumerate(pending):
+            event_index = len(self.evidence.events())
             try:
                 self._apply(command)
             except Exception:
-                # A rejected command is terminally reported by the raised error.
+                # Retain request_id binding even if the adapter outcome is
+                # ambiguous. A duplicate can recover the same command id but
+                # can never re-execute a potentially side-effecting command.
+                # A corrected rejected command must use a new request id.
+                # The rejected command is terminally reported by the raised error.
                 # Commands after it remain queued, in original order, for an
                 # explicit subsequent drain; they are never silently discarded.
                 self._queue = pending[index + 1 :] + self._queue
                 raise
+            if command.request_id is not None:
+                self._request_outcomes[command.request_id] = self.evidence.events()[event_index:]
         return self.evidence.events()[starting_index:]
 
     def complete(self) -> None:
@@ -93,6 +124,16 @@ class VpeRuntime:
     def queued_command_ids(self) -> tuple[str, ...]:
         """Expose retained command order for runtime-contract diagnostics/tests."""
         return tuple(command.command_id for command in sorted(self._queue, key=lambda item: item.submitted_order))
+
+    def request_outcome(self, request_id: str) -> tuple[Event, ...] | None:
+        """Return an accepted in-session outcome, or None while it is unresolved."""
+        self._validate_request_id(request_id)
+        return self._request_outcomes.get(request_id)
+
+    @staticmethod
+    def _validate_request_id(request_id: object) -> None:
+        if not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", request_id):
+            raise ValueError("request_id must be a stable identifier of at most 128 safe characters")
 
     def _validate_command(self, command: Command) -> None:
         """Reject all structurally knowable errors before adapter mutation."""

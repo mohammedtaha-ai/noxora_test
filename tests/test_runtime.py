@@ -156,6 +156,45 @@ class VpeRuntimeTests(unittest.TestCase):
         self.assertEqual(initial_event_count, len(self.runtime.events()))
         self.assertEqual(initial_snapshot_count, len(self.runtime.snapshots()))
 
+    def test_duplicate_side_effecting_request_executes_once_and_returns_existing_outcome(self) -> None:
+        request_id = "ui.advance.001"
+        first_id = self.runtime.submit(
+            CommandKind.ADVANCE_TIME,
+            "learner",
+            {"duration_s": 30.0},
+            request_id=request_id,
+        )
+        duplicate_id = self.runtime.submit(
+            CommandKind.ADVANCE_TIME,
+            "learner",
+            {"duration_s": 30.0},
+            request_id=request_id,
+        )
+        self.assertEqual(first_id, duplicate_id)
+        self.assertEqual((first_id,), self.runtime.queued_command_ids())
+
+        first_outcome = self.runtime.drain()
+        self.assertEqual(30.0, self.runtime.simulation_time_s)
+        self.assertEqual(first_outcome, self.runtime.request_outcome(request_id))
+
+        repeated_id = self.runtime.submit(
+            CommandKind.ADVANCE_TIME,
+            "learner",
+            {"duration_s": 30.0},
+            request_id=request_id,
+        )
+        self.assertEqual(first_id, repeated_id)
+        self.assertEqual((), self.runtime.queued_command_ids())
+        self.assertEqual(30.0, self.runtime.simulation_time_s)
+
+        with self.assertRaisesRegex(ValueError, "already bound to a different command"):
+            self.runtime.submit(
+                CommandKind.ADVANCE_TIME,
+                "learner",
+                {"duration_s": 60.0},
+                request_id=request_id,
+            )
+
     def test_only_explicit_checkpoint_serializes_engine_state(self) -> None:
         adapter = CountingDeterministicAdapter()
         runtime = VpeRuntime(splenic_hemorrhage_learning_scenario(), adapter)

@@ -124,6 +124,35 @@ class PulseAdapterIntegrationTests(unittest.TestCase):
         )
         self.assertTrue(all(math.isfinite(value) for value in after_intervention.telemetry.values()))
 
+    def test_duplicate_request_id_does_not_repeat_real_pulse_advance(self) -> None:
+        request_id = "unity.advance.001"
+        first_id = self.runtime.submit(
+            CommandKind.ADVANCE_TIME,
+            "learner",
+            {"duration_s": 30.0},
+            request_id=request_id,
+        )
+        duplicate_id = self.runtime.submit(
+            CommandKind.ADVANCE_TIME,
+            "learner",
+            {"duration_s": 30.0},
+            request_id=request_id,
+        )
+        self.assertEqual(first_id, duplicate_id)
+        self.runtime.drain()
+        self.assertAlmostEqual(30.0, self.runtime.simulation_time_s, places=6)
+
+        repeated_id = self.runtime.submit(
+            CommandKind.ADVANCE_TIME,
+            "learner",
+            {"duration_s": 30.0},
+            request_id=request_id,
+        )
+        self.assertEqual(first_id, repeated_id)
+        self.assertEqual((), self.runtime.queued_command_ids())
+        self.assertAlmostEqual(30.0, self.runtime.simulation_time_s, places=6)
+        self.assertIsNotNone(self.runtime.request_outcome(request_id))
+
     def test_normal_runtime_snapshots_do_not_create_pulse_state_files(self) -> None:
         def state_files() -> list[Path]:
             return sorted(Path(self.state_directory.name).glob("pulse-state-*.json"))

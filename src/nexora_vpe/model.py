@@ -44,6 +44,7 @@ class Command:
     actor: str
     payload: Mapping[str, Any]
     submitted_order: int
+    request_id: str | None = None
 
 
 @dataclass(frozen=True)
