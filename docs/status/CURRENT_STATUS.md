@@ -2,7 +2,7 @@
 
 ## المرحلة الحالية
 
-**المرحلة:** اكتملت Gate A ونواة S0 headless وPulseAdapter الإنتاجي واختبارات التكامل الأولية؛ أساس **M2 runtime integration** متحقق هندسيًا.
+**المرحلة:** اكتملت Gate A ونواة S0 headless وPulseAdapter الإنتاجي واختبارات التكامل الأولية؛ أساس **M2 runtime integration** متحقق هندسيًا، وحزمة جاهزية M3 موثقة من دون بدء تنفيذ Unity.
 **الفرع العامل:** `manus/s0-foundation`.
 **البوابات:** Gate A — **اجتياز هندسي مشروط**؛ Gate 0 — البروتوكول جاهز لكن لم تجمع بيانات مشاركين.
 
@@ -36,7 +36,7 @@
 | البند | الحالة | الأثر |
 |---|---|---|
 | استعادة crash متقدمة وإدارة عمليات متعددة | **DEFERRED** | لا يعيد adapter تنفيذ أمر زمني تلقائيًا؛ أي recovery يحتاج checkpoint صريحًا. |
-| Unity وFAST spatial resolver | **DEFERRED** | لا يدّعى إتمام M3 أو M4. |
+| تنفيذ Unity وFAST spatial resolver | **DEFERRED** | توجد [حزمة جاهزية M3](../design/m3-unity-readiness.md)، لكن لا يدّعى إتمام M3 أو M4 ولا يبدأ التنفيذ قبل قرار GO مستقل. |
 | التاريخ المقيد مع AI patient وLLM/debrief | **DEFERRED** | لا تعتمد النواة على الشبكة أو نموذج لغوي. |
 | Gate 0 قيمة المنتج | **UNTESTED** | لا يمثل البروتوكول اجتيازًا للبوابة. |
 | BLA/طبقة معرفة ومحتوى خارجي | **UNTESTED** | بوابة منفصلة قبل أي تكامل دلالي. |
@@ -56,10 +56,11 @@
 - [تحقق نواة S0 والـbridge](../reports/003-s0-core-verification.md) — اختبارات runtime وSDK المباشر.
 - [تكامل PulseAdapter](../reports/004-pulse-adapter-integration.md) و[عقد العملية](../contracts/pulse-adapter-process-contract.md) — عملية SDK طويلة العمر واختبارات المسار الكامل.
 - [عقد التصعيد المنظم](../contracts/s0-escalation-contract.md) — قاموس مؤلف، حدث دليل، وقيود عدم تغيير الفيزيولوجيا.
+- [حزمة جاهزية M3](../design/m3-unity-readiness.md) — المتطلبات، فجوات العقد، مكونات التنفيذ وخطة التحقق قبل عميل Unity الأدنى.
 - [`summary.md`](../../experiments/pulse_gate_a/results/2026-08-22/summary.md) و[`SHA256SUMS.txt`](../../experiments/pulse_gate_a/results/2026-08-22/SHA256SUMS.txt) — أدلة Gate A الحتمية.
 - [`pulse_sdk_bridge.json`](../../artifacts/representative-small-results/pulse_sdk_bridge.json) و[`s0_runtime_demo.json`](../../artifacts/representative-small-results/s0_runtime_demo.json) — artifacts تمثيلية صغيرة.
 - [provenance والترخيص](../research/pulse-provenance-and-license.md) — مصدر Pulse والالتزامات التي يلزم مراجعتها.
 
 ## الخطوة التالية المخططة
 
-إجراء مراجعة محتوى طبي/تعليمي مستقلة لمسار S0 وGate 0، ثم اتخاذ قرار صريح حول M3 Unity. يبقى Gate 0 متطلبًا مستقلًا لقيمة المنتج ولا يؤجل بالنجاح الهندسي وحده.
+إجراء مراجعة محتوى طبي/تعليمي مستقلة لمسار S0 وGate 0، ثم اتخاذ قرار صريح GO / REWORK / STOP حول M3. عند GO فقط، يعتمد عقد `VPE Client Facade` وخطة lifecycle ويبدأ تنفيذ عميل Unity الأدنى؛ يبقى Gate 0 متطلبًا مستقلًا لقيمة المنتج ولا يؤجل بالنجاح الهندسي وحده.
