@@ -1,0 +1,241 @@
+{
+  "purpose": "Simulator evidence summary only; not clinical advice.",
+  "result_directory": "results/2026-08-22",
+  "scenarios": {
+    "internal_spleen": {
+      "description": "Internal splenic hemorrhage, controlled stop, then observation.",
+      "csv": "internal_spleen_observability.csv",
+      "rows": 1661,
+      "start_time_s": 0.0,
+      "end_time_s": 1660.0,
+      "positive_hemorrhage_start_s": 31.0,
+      "positive_hemorrhage_end_s": 1260.0,
+      "max_hemorrhage_rate_ml_s": 1.0,
+      "event_snapshots": {
+        "0": {
+          "observed_time_s": 0.0,
+          "heart_rate_bpm": 72.0,
+          "map_mmhg": 95.323,
+          "blood_volume_ml": 5488.939,
+          "hemoglobin_content_g": 821.0,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 0.0,
+          "oxygen_saturation": 0.9741
+        },
+        "30": {
+          "observed_time_s": 30.0,
+          "heart_rate_bpm": 72.025,
+          "map_mmhg": 95.322,
+          "blood_volume_ml": 5490.132,
+          "hemoglobin_content_g": 821.0,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 0.0,
+          "oxygen_saturation": 0.9741
+        },
+        "31": {
+          "observed_time_s": 31.0,
+          "heart_rate_bpm": 72.024,
+          "map_mmhg": 95.543,
+          "blood_volume_ml": 5489.17,
+          "hemoglobin_content_g": 821.0,
+          "hemorrhage_rate_ml_s": 1.0,
+          "hemorrhaged_volume_ml": 0.98,
+          "oxygen_saturation": 0.974
+        },
+        "1260": {
+          "observed_time_s": 1260.0,
+          "heart_rate_bpm": 101.002,
+          "map_mmhg": 93.564,
+          "blood_volume_ml": 4327.139,
+          "hemoglobin_content_g": 638.0,
+          "hemorrhage_rate_ml_s": 1.0,
+          "hemorrhaged_volume_ml": 1229.98,
+          "oxygen_saturation": 0.9672
+        },
+        "1261": {
+          "observed_time_s": 1261.0,
+          "heart_rate_bpm": 101.048,
+          "map_mmhg": 93.548,
+          "blood_volume_ml": 4327.209,
+          "hemoglobin_content_g": 638.0,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 1229.98,
+          "oxygen_saturation": 0.9673
+        },
+        "1660": {
+          "observed_time_s": 1660.0,
+          "heart_rate_bpm": 99.708,
+          "map_mmhg": 93.729,
+          "blood_volume_ml": 4353.482,
+          "hemoglobin_content_g": 638.0,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 1229.98,
+          "oxygen_saturation": 0.9675
+        }
+      }
+    },
+    "saline": {
+      "description": "Dual hemorrhage, controlled stop, then Saline compound infusion.",
+      "csv": "hemorrhage_saline_observability.csv",
+      "rows": 1141,
+      "start_time_s": 0.0,
+      "end_time_s": 1140.0,
+      "positive_hemorrhage_start_s": 31.0,
+      "positive_hemorrhage_end_s": 620.0,
+      "max_hemorrhage_rate_ml_s": 2.333,
+      "event_snapshots": {
+        "0": {
+          "observed_time_s": 0.0,
+          "heart_rate_bpm": 72.0,
+          "map_mmhg": 95.323,
+          "blood_volume_ml": 5488.939,
+          "hemoglobin_content_g": 821.464,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 0.0,
+          "oxygen_saturation": 0.9741
+        },
+        "30": {
+          "observed_time_s": 30.0,
+          "heart_rate_bpm": 72.025,
+          "map_mmhg": 95.322,
+          "blood_volume_ml": 5490.132,
+          "hemoglobin_content_g": 821.464,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 0.0,
+          "oxygen_saturation": 0.9741
+        },
+        "620": {
+          "observed_time_s": 620.0,
+          "heart_rate_bpm": 112.307,
+          "map_mmhg": 88.358,
+          "blood_volume_ml": 4144.966,
+          "hemoglobin_content_g": 615.895,
+          "hemorrhage_rate_ml_s": 2.333,
+          "hemorrhaged_volume_ml": 1376.62,
+          "oxygen_saturation": 0.9646
+        },
+        "621": {
+          "observed_time_s": 621.0,
+          "heart_rate_bpm": 112.402,
+          "map_mmhg": 88.236,
+          "blood_volume_ml": 4145.048,
+          "hemoglobin_content_g": 615.895,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 1376.62,
+          "oxygen_saturation": 0.9647
+        },
+        "740": {
+          "observed_time_s": 740.0,
+          "heart_rate_bpm": 112.891,
+          "map_mmhg": 89.031,
+          "blood_volume_ml": 4155.146,
+          "hemoglobin_content_g": 615.895,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 1376.62,
+          "oxygen_saturation": 0.9627
+        },
+        "1040": {
+          "observed_time_s": 1040.0,
+          "heart_rate_bpm": 93.224,
+          "map_mmhg": 94.299,
+          "blood_volume_ml": 4676.326,
+          "hemoglobin_content_g": 615.893,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 1376.62,
+          "oxygen_saturation": 0.9685
+        },
+        "1140": {
+          "observed_time_s": 1140.0,
+          "heart_rate_bpm": 93.447,
+          "map_mmhg": 94.108,
+          "blood_volume_ml": 4682.554,
+          "hemoglobin_content_g": 615.893,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 1376.62,
+          "oxygen_saturation": 0.9694
+        }
+      }
+    },
+    "packed_rbc": {
+      "description": "Dual hemorrhage, controlled stop, then PackedRBC compound infusion.",
+      "csv": "hemorrhage_packed_rbc_observability.csv",
+      "rows": 2881,
+      "start_time_s": 0.0,
+      "end_time_s": 2880.0,
+      "positive_hemorrhage_start_s": 31.0,
+      "positive_hemorrhage_end_s": 430.0,
+      "max_hemorrhage_rate_ml_s": 4.167,
+      "event_snapshots": {
+        "0": {
+          "observed_time_s": 0.0,
+          "heart_rate_bpm": 72.0,
+          "map_mmhg": 95.323,
+          "blood_volume_ml": 5488.939,
+          "hemoglobin_content_g": 821.464,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 0.0,
+          "oxygen_saturation": 0.9741
+        },
+        "30": {
+          "observed_time_s": 30.0,
+          "heart_rate_bpm": 72.025,
+          "map_mmhg": 95.322,
+          "blood_volume_ml": 5490.132,
+          "hemoglobin_content_g": 821.464,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 0.0,
+          "oxygen_saturation": 0.9741
+        },
+        "430": {
+          "observed_time_s": 430.0,
+          "heart_rate_bpm": 119.178,
+          "map_mmhg": 73.116,
+          "blood_volume_ml": 3848.513,
+          "hemoglobin_content_g": 572.436,
+          "hemorrhage_rate_ml_s": 4.167,
+          "hemorrhaged_volume_ml": 1666.583,
+          "oxygen_saturation": 0.9604
+        },
+        "431": {
+          "observed_time_s": 431.0,
+          "heart_rate_bpm": 119.269,
+          "map_mmhg": 72.895,
+          "blood_volume_ml": 3848.64,
+          "hemoglobin_content_g": 572.436,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 1666.583,
+          "oxygen_saturation": 0.9604
+        },
+        "550": {
+          "observed_time_s": 550.0,
+          "heart_rate_bpm": 121.448,
+          "map_mmhg": 75.943,
+          "blood_volume_ml": 3864.255,
+          "hemoglobin_content_g": 572.435,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 1666.583,
+          "oxygen_saturation": 0.954
+        },
+        "2880": {
+          "observed_time_s": 2880.0,
+          "heart_rate_bpm": 94.947,
+          "map_mmhg": 85.785,
+          "blood_volume_ml": 4286.981,
+          "hemoglobin_content_g": 615.11,
+          "hemorrhage_rate_ml_s": 0.0,
+          "hemorrhaged_volume_ml": 1666.583,
+          "oxygen_saturation": 0.9647
+        }
+      }
+    }
+  },
+  "snapshot_continuity": {
+    "seed_csv": "snapshot_seed_continuation.csv",
+    "restore_csv": "snapshot_restore_continuation.csv",
+    "overlap_rows_compared": 121,
+    "overlap_start_s": 150.0,
+    "overlap_end_s": 270.0,
+    "max_absolute_difference": 0.0,
+    "exact_numeric_match": true
+  }
+}

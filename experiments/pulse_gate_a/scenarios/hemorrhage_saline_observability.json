@@ -1,0 +1,30 @@
+{
+  "Name": "NexoraGateAHemorrhageSalineObservability",
+  "Description": "Gate A evidence run: controlled dual hemorrhage, stop, then Saline compound infusion. Research and engineering use only; not a clinical decision tool.",
+  "PatientConfiguration": { "PatientFile": "StandardMale.json" },
+  "DataRequestFile": ["StandardDataRequests.json"],
+  "DataRequestManager": {
+    "ResultsFilename": "./test_results/gate_a/hemorrhage_saline_observability.csv",
+    "SamplesPerSecond": 1.0,
+    "DataRequest": [
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "TotalHemorrhageRate", "Unit": "mL/s" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "TotalHemorrhagedVolume", "Unit": "mL" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "HeartRate", "Unit": "1/min" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "MeanArterialPressure", "Unit": "mmHg" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "BloodVolume", "Unit": "mL" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "HemoglobinContent", "Unit": "g" },
+      { "DecimalFormat": { "Precision": 4 }, "Category": "Physiology", "PropertyName": "OxygenSaturation" }
+    ]
+  },
+  "AnyAction": [
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 30.0, "Unit": "s" } } } },
+    { "PatientAction": { "Hemorrhage": { "Compartment": "RightLeg", "FlowRate": { "ScalarVolumePerTime": { "Value": 90.0, "Unit": "mL/min" } } } } },
+    { "PatientAction": { "Hemorrhage": { "Compartment": "VenaCava", "FlowRate": { "ScalarVolumePerTime": { "Value": 50.0, "Unit": "mL/min" } } } } },
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 590.0, "Unit": "s" } } } },
+    { "PatientAction": { "Hemorrhage": { "Compartment": "RightLeg", "FlowRate": { "ScalarVolumePerTime": { "Value": 0.0, "Unit": "mL/min" } } } } },
+    { "PatientAction": { "Hemorrhage": { "Compartment": "VenaCava", "FlowRate": { "ScalarVolumePerTime": { "Value": 0.0, "Unit": "mL/min" } } } } },
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 120.0, "Unit": "s" } } } },
+    { "PatientAction": { "SubstanceCompoundInfusion": { "SubstanceCompound": "Saline", "BagVolume": { "ScalarVolume": { "Value": 500.0, "Unit": "mL" } }, "Rate": { "ScalarVolumePerTime": { "Value": 100.0, "Unit": "mL/min" } } } } },
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 400.0, "Unit": "s" } } } }
+  ]
+}

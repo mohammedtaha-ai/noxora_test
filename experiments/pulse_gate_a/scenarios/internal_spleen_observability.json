@@ -1,0 +1,118 @@
+{
+  "Name": "NexoraGateAInternalSpleenObservability",
+  "Description": "Gate A evidence run: internal splenic hemorrhage at 60 mL/min with explicit telemetry and controlled stop. Research and engineering use only; not a clinical decision tool.",
+  "PatientConfiguration": {
+    "PatientFile": "StandardMale.json"
+  },
+  "DataRequestFile": [
+    "StandardDataRequests.json"
+  ],
+  "DataRequestManager": {
+    "ResultsFilename": "./test_results/gate_a/internal_spleen_observability.csv",
+    "SamplesPerSecond": 1.0,
+    "DataRequest": [
+      {
+        "DecimalFormat": { "Precision": 3 },
+        "Category": "Action",
+        "ActionName": "Hemorrhage",
+        "CompartmentName": "Spleen",
+        "PropertyName": "FlowRate",
+        "Unit": "mL/s"
+      },
+      {
+        "DecimalFormat": { "Precision": 3 },
+        "Category": "Action",
+        "ActionName": "Hemorrhage",
+        "CompartmentName": "Spleen",
+        "PropertyName": "TotalBloodLost",
+        "Unit": "mL"
+      },
+      {
+        "DecimalFormat": { "Precision": 3 },
+        "Category": "Physiology",
+        "PropertyName": "TotalHemorrhageRate",
+        "Unit": "mL/s"
+      },
+      {
+        "DecimalFormat": { "Precision": 3 },
+        "Category": "Physiology",
+        "PropertyName": "TotalHemorrhagedVolume",
+        "Unit": "mL"
+      },
+      {
+        "DecimalFormat": { "Precision": 3 },
+        "Category": "Physiology",
+        "PropertyName": "HeartRate",
+        "Unit": "1/min"
+      },
+      {
+        "DecimalFormat": { "Precision": 3 },
+        "Category": "Physiology",
+        "PropertyName": "MeanArterialPressure",
+        "Unit": "mmHg"
+      },
+      {
+        "DecimalFormat": { "Precision": 3 },
+        "Category": "Physiology",
+        "PropertyName": "BloodVolume",
+        "Unit": "mL"
+      },
+      {
+        "DecimalFormat": { "Precision": 3 },
+        "Category": "Physiology",
+        "PropertyName": "RespirationRate",
+        "Unit": "1/min"
+      },
+      {
+        "DecimalFormat": { "Precision": 4 },
+        "Category": "Physiology",
+        "PropertyName": "OxygenSaturation"
+      }
+    ]
+  },
+  "AnyAction": [
+    {
+      "AdvanceTime": {
+        "Time": {
+          "ScalarTime": { "Value": 30.0, "Unit": "s" }
+        }
+      }
+    },
+    {
+      "PatientAction": {
+        "Hemorrhage": {
+          "Compartment": "Spleen",
+          "FlowRate": {
+            "ScalarVolumePerTime": { "Value": 60.0, "Unit": "mL/min" }
+          },
+          "Type": "Internal"
+        }
+      }
+    },
+    {
+      "AdvanceTime": {
+        "Time": {
+          "ScalarTime": { "Value": 1230.0, "Unit": "s" }
+        }
+      }
+    },
+    {
+      "PatientAction": {
+        "Hemorrhage": {
+          "Compartment": "Spleen",
+          "FlowRate": {
+            "ScalarVolumePerTime": { "Value": 0.0, "Unit": "mL/min" }
+          },
+          "Type": "Internal"
+        }
+      }
+    },
+    {
+      "AdvanceTime": {
+        "Time": {
+          "ScalarTime": { "Value": 400.0, "Unit": "s" }
+        }
+      }
+    }
+  ]
+}

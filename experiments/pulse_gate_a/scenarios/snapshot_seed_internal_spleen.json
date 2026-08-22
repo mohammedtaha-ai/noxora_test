@@ -1,0 +1,23 @@
+{
+  "Name": "NexoraGateASnapshotSeedInternalSpleen",
+  "Description": "Gate A state-continuity seed: save an active internal splenic hemorrhage state after 150 s. Engineering evidence only; not a clinical tool.",
+  "PatientConfiguration": { "PatientFile": "StandardMale.json" },
+  "DataRequestManager": {
+    "ResultsFilename": "./test_results/gate_a/snapshot_seed_continuation.csv",
+    "SamplesPerSecond": 1.0,
+    "DataRequest": [
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "TotalHemorrhageRate", "Unit": "mL/s" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "TotalHemorrhagedVolume", "Unit": "mL" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "HeartRate", "Unit": "1/min" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "MeanArterialPressure", "Unit": "mmHg" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "BloodVolume", "Unit": "mL" }
+    ]
+  },
+  "AnyAction": [
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 30.0, "Unit": "s" } } } },
+    { "PatientAction": { "Hemorrhage": { "Compartment": "Spleen", "FlowRate": { "ScalarVolumePerTime": { "Value": 60.0, "Unit": "mL/min" } }, "Type": "Internal" } } },
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 120.0, "Unit": "s" } } } },
+    { "SerializeState": { "Mode": "Save", "Filename": "./test_results/gate_a/snapshot_internal_spleen.json" } },
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 120.0, "Unit": "s" } } } }
+  ]
+}

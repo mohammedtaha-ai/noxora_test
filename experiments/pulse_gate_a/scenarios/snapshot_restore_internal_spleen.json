@@ -1,0 +1,19 @@
+{
+  "Name": "NexoraGateASnapshotRestoreInternalSpleen",
+  "Description": "Gate A state-continuity restore: load the saved active internal splenic hemorrhage state and advance 120 s. Engineering evidence only; not a clinical tool.",
+  "EngineStateFile": "./test_results/gate_a/snapshot_internal_spleen.json",
+  "DataRequestManager": {
+    "ResultsFilename": "./test_results/gate_a/snapshot_restore_continuation.csv",
+    "SamplesPerSecond": 1.0,
+    "DataRequest": [
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "TotalHemorrhageRate", "Unit": "mL/s" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "TotalHemorrhagedVolume", "Unit": "mL" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "HeartRate", "Unit": "1/min" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "MeanArterialPressure", "Unit": "mmHg" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "BloodVolume", "Unit": "mL" }
+    ]
+  },
+  "AnyAction": [
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 120.0, "Unit": "s" } } } }
+  ]
+}

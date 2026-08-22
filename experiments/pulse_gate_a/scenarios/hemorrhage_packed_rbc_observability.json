@@ -1,0 +1,30 @@
+{
+  "Name": "NexoraGateAHemorrhagePackedRBCObservability",
+  "Description": "Gate A evidence run: controlled hemorrhage, stop, then PackedRBC compound infusion. Research and engineering use only; not a clinical decision tool.",
+  "PatientConfiguration": { "PatientFile": "StandardMale.json" },
+  "DataRequestFile": ["StandardDataRequests.json"],
+  "DataRequestManager": {
+    "ResultsFilename": "./test_results/gate_a/hemorrhage_packed_rbc_observability.csv",
+    "SamplesPerSecond": 1.0,
+    "DataRequest": [
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "TotalHemorrhageRate", "Unit": "mL/s" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "TotalHemorrhagedVolume", "Unit": "mL" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "HeartRate", "Unit": "1/min" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "MeanArterialPressure", "Unit": "mmHg" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "BloodVolume", "Unit": "mL" },
+      { "DecimalFormat": { "Precision": 3 }, "Category": "Physiology", "PropertyName": "HemoglobinContent", "Unit": "g" },
+      { "DecimalFormat": { "Precision": 4 }, "Category": "Physiology", "PropertyName": "OxygenSaturation" }
+    ]
+  },
+  "AnyAction": [
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 30.0, "Unit": "s" } } } },
+    { "PatientAction": { "Hemorrhage": { "Compartment": "RightLeg", "FlowRate": { "ScalarVolumePerTime": { "Value": 75.0, "Unit": "mL/min" } } } } },
+    { "PatientAction": { "Hemorrhage": { "Compartment": "VenaCava", "FlowRate": { "ScalarVolumePerTime": { "Value": 175.0, "Unit": "mL/min" } } } } },
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 400.0, "Unit": "s" } } } },
+    { "PatientAction": { "Hemorrhage": { "Compartment": "RightLeg", "FlowRate": { "ScalarVolumePerTime": { "Value": 0.0, "Unit": "mL/min" } } } } },
+    { "PatientAction": { "Hemorrhage": { "Compartment": "VenaCava", "FlowRate": { "ScalarVolumePerTime": { "Value": 0.0, "Unit": "mL/min" } } } } },
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 120.0, "Unit": "s" } } } },
+    { "PatientAction": { "SubstanceCompoundInfusion": { "SubstanceCompound": "PackedRBC", "BagVolume": { "ScalarVolume": { "Value": 250.0, "Unit": "mL" } }, "Rate": { "ScalarVolumePerTime": { "Value": 5.0, "Unit": "mL/min" } } } } },
+    { "AdvanceTime": { "Time": { "ScalarTime": { "Value": 2330.0, "Unit": "s" } } } }
+  ]
+}
