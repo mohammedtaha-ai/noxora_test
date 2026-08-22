@@ -159,9 +159,16 @@ class VpeRuntime:
                 raise ValueError("History intent is not allowed by scenario")
             return
 
+        if command.kind == CommandKind.RECORD_CLINICAL_HYPOTHESIS:
+            hypothesis_id = command.payload.get("hypothesis_id")
+            if not isinstance(hypothesis_id, str):
+                raise ValueError("record_clinical_hypothesis requires hypothesis_id")
+            self.scenario.clinical_hypothesis(hypothesis_id)
+            return
+
         if command.kind == CommandKind.REQUEST_OBSERVATION:
-            if command.payload.get("observation_id") not in {"FAST", "VITALS", "CBC"}:
-                raise ValueError("Observation is not allowed by S0")
+            if command.payload.get("observation_id") not in self.scenario.allowed_observation_ids():
+                raise ValueError("Observation is not allowed by scenario")
             return
 
         if command.kind == CommandKind.RECORD_ESCALATION:
@@ -222,10 +229,18 @@ class VpeRuntime:
             )
             return
 
+        if command.kind == CommandKind.RECORD_CLINICAL_HYPOTHESIS:
+            hypothesis_id = command.payload.get("hypothesis_id")
+            self._emit(
+                EventType.CLINICAL_HYPOTHESIS_RECORDED,
+                actor=command.actor,
+                source="scenario_runtime",
+                payload={"command_id": command.command_id, "hypothesis_id": hypothesis_id},
+            )
+            return
+
         if command.kind == CommandKind.REQUEST_OBSERVATION:
             observation_id = command.payload.get("observation_id")
-            if observation_id not in {"FAST", "VITALS", "CBC"}:
-                raise ValueError("Observation is not allowed by S0")
             self._emit(
                 EventType.OBSERVATION_REQUESTED,
                 actor=command.actor,

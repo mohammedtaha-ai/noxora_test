@@ -17,9 +17,18 @@ ALLOWED_HISTORY_INTENTS = frozenset(
         "ALLERGIES",
         "PAST_MEDICAL_HISTORY",
         "ANTICOAGULANT_USE",
-        "SUSPECT_INTERNAL_BLEEDING",
     }
 )
+
+ALLOWED_CLINICAL_HYPOTHESES = frozenset({"INTERNAL_BLEEDING"})
+BUILT_IN_OBSERVATION_IDS = frozenset({"VITALS"})
+
+
+@dataclass(frozen=True)
+class ObservationDefinition:
+    observation_id: str
+    enabled: bool
+    controlled_finding: str | None = None
 
 
 @dataclass(frozen=True)
@@ -56,15 +65,20 @@ class S0Scenario:
     patient_template: str
     hemorrhage_compartment: str
     hemorrhage_flow_rate_ml_min: float
+    learning_objectives: tuple[str, ...]
     allowed_history_intents: frozenset[str]
+    allowed_clinical_hypotheses: frozenset[str]
+    observations: Mapping[str, ObservationDefinition]
     interventions: Mapping[str, InterventionDefinition]
     escalations: Mapping[str, EscalationDefinition]
     telemetry_keys: tuple[str, ...]
+    completion_success_rules: tuple[str, ...]
+    completion_failure_rules: tuple[str, ...]
     mode: str = "learning"
-    schema_version: str = "1.1"
+    schema_version: str = "1.2"
 
     def validate(self) -> None:
-        if self.schema_version != "1.1":
+        if self.schema_version != "1.2":
             raise ValueError("Unsupported scenario schema version")
         if self.mode != "learning":
             raise ValueError("S0 supports learning mode only")
@@ -74,8 +88,23 @@ class S0Scenario:
             raise ValueError("S0 pathology must be the existing splenic hemorrhage")
         if self.hemorrhage_flow_rate_ml_min <= 0:
             raise ValueError("Existing hemorrhage flow rate must be positive")
+        if not self.learning_objectives:
+            raise ValueError("Scenario requires learning objectives")
         if not self.allowed_history_intents.issubset(ALLOWED_HISTORY_INTENTS):
             raise ValueError("Scenario contains an unknown history intent")
+        if not self.allowed_clinical_hypotheses.issubset(ALLOWED_CLINICAL_HYPOTHESES):
+            raise ValueError("Scenario contains an unknown clinical hypothesis")
+        if not self.observations:
+            raise ValueError("Scenario requires authored observations")
+        for observation_id, definition in self.observations.items():
+            if observation_id != definition.observation_id:
+                raise ValueError("Observation definitions must use matching identifiers")
+            if observation_id not in {"FAST", "CBC"}:
+                raise ValueError("Scenario contains an unsupported observation")
+            if definition.enabled and not definition.controlled_finding:
+                raise ValueError("Enabled authored observations require a controlled finding")
+        if self.completion_success_rules or self.completion_failure_rules:
+            raise ValueError("S0 completion rules must remain empty in learning mode")
         if not self.interventions:
             raise ValueError("Scenario requires at least one constrained intervention")
         for definition in self.interventions.values():
@@ -88,6 +117,15 @@ class S0Scenario:
         for escalation_id, definition in self.escalations.items():
             if not escalation_id or escalation_id != definition.escalation_id:
                 raise ValueError("Escalation definitions must use non-empty matching identifiers")
+
+    def allowed_observation_ids(self) -> frozenset[str]:
+        authored = {observation_id for observation_id, definition in self.observations.items() if definition.enabled}
+        return BUILT_IN_OBSERVATION_IDS | frozenset(authored)
+
+    def clinical_hypothesis(self, hypothesis_id: str) -> str:
+        if hypothesis_id not in self.allowed_clinical_hypotheses:
+            raise ValueError(f"Clinical hypothesis not allowed by scenario: {hypothesis_id}")
+        return hypothesis_id
 
     def intervention(self, intervention_id: str) -> InterventionDefinition:
         try:
@@ -110,9 +148,24 @@ def splenic_hemorrhage_learning_scenario() -> S0Scenario:
         patient_template="adult_male_standard",
         hemorrhage_compartment="Spleen",
         hemorrhage_flow_rate_ml_min=60.0,
-        allowed_history_intents=frozenset(
-            {"PAIN_ONSET", "PAIN_LOCATION", "MECHANISM_OF_INJURY", "SUSPECT_INTERNAL_BLEEDING"}
+        learning_objectives=(
+            "identify_deterioration",
+            "suspect_internal_bleeding",
+            "request_fast",
+            "begin_resuscitation",
+            "reassess",
         ),
+        allowed_history_intents=frozenset(
+            {"PAIN_ONSET", "PAIN_LOCATION", "MECHANISM_OF_INJURY"}
+        ),
+        allowed_clinical_hypotheses=frozenset({"INTERNAL_BLEEDING"}),
+        observations={
+            "FAST": ObservationDefinition(
+                observation_id="FAST",
+                enabled=True,
+                controlled_finding="free_fluid_positive",
+            )
+        },
         interventions={
             "crystalloid_saline": InterventionDefinition(
                 intervention_id="crystalloid_saline",
@@ -139,6 +192,8 @@ def splenic_hemorrhage_learning_scenario() -> S0Scenario:
             "total_hemorrhaged_volume_ml",
             "oxygen_saturation",
         ),
+        completion_success_rules=(),
+        completion_failure_rules=(),
     )
     scenario.validate()
     return scenario

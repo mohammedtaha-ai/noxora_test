@@ -24,6 +24,7 @@
       "enum": [
         "clock.advanced",
         "clinical.intent.recorded",
+        "clinical.hypothesis.recorded",
         "observation.requested",
         "intervention.applied",
         "snapshot.published",

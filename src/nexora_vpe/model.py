@@ -18,6 +18,7 @@ class RuntimeState(str, Enum):
 class CommandKind(str, Enum):
     ADVANCE_TIME = "advance_time"
     RECORD_HISTORY_INTENT = "record_history_intent"
+    RECORD_CLINICAL_HYPOTHESIS = "record_clinical_hypothesis"
     REQUEST_OBSERVATION = "request_observation"
     RECORD_ESCALATION = "record_escalation"
     APPLY_INTERVENTION = "apply_intervention"
@@ -28,6 +29,7 @@ class CommandKind(str, Enum):
 class EventType(str, Enum):
     CLOCK_ADVANCED = "clock.advanced"
     CLINICAL_INTENT_RECORDED = "clinical.intent.recorded"
+    CLINICAL_HYPOTHESIS_RECORDED = "clinical.hypothesis.recorded"
     OBSERVATION_REQUESTED = "observation.requested"
     INTERVENTION_APPLIED = "intervention.applied"
     SNAPSHOT_PUBLISHED = "snapshot.published"

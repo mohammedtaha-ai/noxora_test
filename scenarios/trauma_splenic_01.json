@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "id": "trauma_splenic_01",
   "title": "Abdominal trauma: active splenic hemorrhage",
   "mode": "learning",
@@ -24,15 +24,22 @@
     "allowed_intents": [
       "PAIN_ONSET",
       "PAIN_LOCATION",
-      "MECHANISM_OF_INJURY",
-      "SUSPECT_INTERNAL_BLEEDING"
+      "MECHANISM_OF_INJURY"
+    ]
+  },
+  "clinical_hypotheses": {
+    "allowed": [
+      "INTERNAL_BLEEDING"
     ]
   },
   "observations": {
-    "fast": {
-      "enabled": true,
-      "controlled_finding": "free_fluid_positive"
-    }
+    "allowed": [
+      {
+        "id": "FAST",
+        "enabled": true,
+        "controlled_finding": "free_fluid_positive"
+      }
+    ]
   },
   "interventions": {
     "allowed": [

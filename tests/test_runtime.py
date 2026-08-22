@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import tempfile
 import unittest
 
 from pathlib import Path
@@ -31,11 +33,45 @@ class VpeRuntimeTests(unittest.TestCase):
         project_root = Path(__file__).resolve().parents[1]
         loaded = load_s0_scenario(project_root / "scenarios" / "trauma_splenic_01.json")
         self.assertEqual("trauma_splenic_01", loaded.scenario_id)
-        self.assertEqual("1.1", loaded.schema_version)
+        self.assertEqual("1.2", loaded.schema_version)
         self.assertEqual("learning", loaded.mode)
         self.assertEqual("Spleen", loaded.hemorrhage_compartment)
+        self.assertEqual(
+            ("identify_deterioration", "suspect_internal_bleeding", "request_fast", "begin_resuscitation", "reassess"),
+            loaded.learning_objectives,
+        )
+        self.assertEqual(frozenset({"INTERNAL_BLEEDING"}), loaded.allowed_clinical_hypotheses)
+        self.assertEqual(frozenset({"VITALS", "FAST"}), loaded.allowed_observation_ids())
+        self.assertEqual("free_fluid_positive", loaded.observations["FAST"].controlled_finding)
+        self.assertEqual((), loaded.completion_success_rules)
+        self.assertEqual((), loaded.completion_failure_rules)
         self.assertIn("blood_packed_rbc", loaded.interventions)
         self.assertIn("trauma_team_escalation", loaded.escalations)
+
+    def test_scenario_loader_rejects_unknown_authoritative_field(self) -> None:
+        project_root = Path(__file__).resolve().parents[1]
+        raw = json.loads((project_root / "scenarios" / "trauma_splenic_01.json").read_text(encoding="utf-8"))
+        raw["decorative_but_unsupported"] = True
+        with tempfile.TemporaryDirectory() as directory:
+            invalid_path = Path(directory) / "invalid.json"
+            invalid_path.write_text(json.dumps(raw), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Invalid S0 scenario contract"):
+                load_s0_scenario(invalid_path)
+
+    def test_scenario_schema_covers_source_authoritative_fields(self) -> None:
+        project_root = Path(__file__).resolve().parents[1]
+        raw = json.loads((project_root / "scenarios" / "trauma_splenic_01.json").read_text(encoding="utf-8"))
+        schema = json.loads((project_root / "schemas" / "s0-scenario.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(raw), set(schema["required"]))
+        self.assertEqual(set(raw), set(schema["properties"]))
+        self.assertEqual(
+            set(raw["observations"]),
+            set(schema["properties"]["observations"]["required"]),
+        )
+        self.assertEqual(
+            set(raw["clinical_hypotheses"]),
+            set(schema["properties"]["clinical_hypotheses"]["required"]),
+        )
 
     def test_start_bootstraps_existing_pathology_and_publishes_snapshot(self) -> None:
         self.assertEqual(RuntimeState.RUNNING, self.runtime.state)
@@ -56,6 +92,35 @@ class VpeRuntimeTests(unittest.TestCase):
         )
         self.assertEqual("PAIN_ONSET", meaningful[0].payload["intent_id"])
         self.assertEqual("VITALS", meaningful[1].payload["observation_id"])
+
+    def test_clinical_hypothesis_is_distinct_from_history_intent(self) -> None:
+        self.runtime.submit(
+            CommandKind.RECORD_CLINICAL_HYPOTHESIS,
+            "learner",
+            {"hypothesis_id": "INTERNAL_BLEEDING"},
+        )
+        events = self.runtime.drain()
+        self.assertEqual(EventType.CLINICAL_HYPOTHESIS_RECORDED, events[0].event_type)
+        self.assertEqual("INTERNAL_BLEEDING", events[0].payload["hypothesis_id"])
+
+        self.runtime.submit(
+            CommandKind.RECORD_HISTORY_INTENT,
+            "learner",
+            {"intent_id": "SUSPECT_INTERNAL_BLEEDING"},
+        )
+        with self.assertRaisesRegex(ValueError, "History intent is not allowed by scenario"):
+            self.runtime.drain()
+
+    def test_observation_allowlist_comes_from_scenario_contract(self) -> None:
+        self.runtime.submit(CommandKind.REQUEST_OBSERVATION, "learner", {"observation_id": "VITALS"})
+        self.runtime.submit(CommandKind.REQUEST_OBSERVATION, "learner", {"observation_id": "FAST"})
+        events = self.runtime.drain()
+        requested = [event.payload["observation_id"] for event in events]
+        self.assertEqual(["VITALS", "FAST"], requested)
+
+        self.runtime.submit(CommandKind.REQUEST_OBSERVATION, "learner", {"observation_id": "CBC"})
+        with self.assertRaisesRegex(ValueError, "Observation is not allowed by scenario"):
+            self.runtime.drain()
 
     def test_non_physiology_actions_do_not_advance_simulation_time(self) -> None:
         self.runtime.submit(CommandKind.RECORD_HISTORY_INTENT, "learner", {"intent_id": "PAIN_LOCATION"})
