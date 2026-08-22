@@ -9,6 +9,18 @@ from nexora_vpe.model import CommandKind, EventType, RuntimeState
 from nexora_vpe.scenario import splenic_hemorrhage_learning_scenario
 
 
+class CountingDeterministicAdapter(DeterministicPhysiologyAdapter):
+    """Test-only adapter that exposes explicit engine-state serialization calls."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.save_state_calls = 0
+
+    def save_state(self):  # type: ignore[no-untyped-def]
+        self.save_state_calls += 1
+        return super().save_state()
+
+
 class VpeRuntimeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.scenario = splenic_hemorrhage_learning_scenario()
@@ -77,6 +89,33 @@ class VpeRuntimeTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "Escalation not allowed by scenario"):
             self.runtime.drain()
+
+    def test_only_explicit_checkpoint_serializes_engine_state(self) -> None:
+        adapter = CountingDeterministicAdapter()
+        runtime = VpeRuntime(splenic_hemorrhage_learning_scenario(), adapter)
+        runtime.start()
+        self.assertEqual(0, adapter.save_state_calls)
+        self.assertNotIn("adapter_state", runtime.snapshots()[-1].as_dict())
+
+        runtime.submit(CommandKind.ADVANCE_TIME, "learner", {"duration_s": 10.0})
+        runtime.drain()
+        self.assertEqual(0, adapter.save_state_calls)
+
+        runtime.submit(
+            CommandKind.APPLY_INTERVENTION,
+            "learner",
+            {"intervention_id": "crystalloid_saline"},
+        )
+        runtime.drain()
+        self.assertEqual(0, adapter.save_state_calls)
+
+        runtime.submit(CommandKind.CREATE_CHECKPOINT, "learner", {"checkpoint_id": "explicit"})
+        runtime.drain()
+        self.assertEqual(1, adapter.save_state_calls)
+        artifacts = runtime.checkpoint_artifacts()
+        self.assertEqual(1, len(artifacts))
+        self.assertEqual("explicit", artifacts[0].checkpoint_id)
+        self.assertEqual(runtime.simulation_time_s, artifacts[0].simulation_time_s)
 
     def test_intervention_then_time_advance_publishes_ordered_evidence(self) -> None:
         self.runtime.submit(CommandKind.APPLY_INTERVENTION, "learner", {"intervention_id": "crystalloid_saline"})

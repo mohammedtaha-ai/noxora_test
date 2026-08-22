@@ -6,7 +6,7 @@ from typing import Any, Mapping
 
 from .adapter import PhysiologyAdapter
 from .events import EvidenceStore
-from .model import Command, CommandKind, Event, EventType, RuntimeState, Snapshot
+from .model import CheckpointArtifact, Command, CommandKind, Event, EventType, RuntimeState, Snapshot
 from .scenario import S0Scenario
 
 
@@ -23,7 +23,7 @@ class VpeRuntime:
     state: RuntimeState = RuntimeState.PAUSED_BY_SCENARIO
     evidence: EvidenceStore = field(default_factory=EvidenceStore)
     _queue: list[Command] = field(default_factory=list)
-    _checkpoint_states: dict[str, Mapping[str, Any]] = field(default_factory=dict)
+    _checkpoints: dict[str, CheckpointArtifact] = field(default_factory=dict)
     _event_counter: int = 0
     _snapshot_counter: int = 0
     _submitted_counter: int = 0
@@ -77,6 +77,10 @@ class VpeRuntime:
 
     def snapshots(self) -> tuple[Snapshot, ...]:
         return self.evidence.snapshots()
+
+    def checkpoint_artifacts(self) -> tuple[CheckpointArtifact, ...]:
+        """Return in-session restorable artifacts, never canonical snapshots."""
+        return tuple(self._checkpoints.values())
 
     def _apply(self, command: Command) -> None:
         if command.kind == CommandKind.ADVANCE_TIME:
@@ -158,9 +162,16 @@ class VpeRuntime:
             checkpoint_id = command.payload.get("checkpoint_id")
             if not isinstance(checkpoint_id, str) or not checkpoint_id:
                 raise ValueError("create_checkpoint requires checkpoint_id")
-            if checkpoint_id in self._checkpoint_states:
+            if checkpoint_id in self._checkpoints:
                 raise ValueError("Checkpoint identifier already exists")
-            self._checkpoint_states[checkpoint_id] = dict(self.adapter.save_state())
+            engine_state = dict(self.adapter.save_state())
+            self._checkpoints[checkpoint_id] = CheckpointArtifact(
+                checkpoint_id=checkpoint_id,
+                scenario_id=self.scenario.scenario_id,
+                simulation_time_s=self.adapter.simulation_time_s,
+                engine_version=self.adapter.engine_version,
+                engine_state=engine_state,
+            )
             self._emit(
                 EventType.CHECKPOINT_CREATED,
                 actor=command.actor,
@@ -172,9 +183,9 @@ class VpeRuntime:
 
         if command.kind == CommandKind.RESTORE_CHECKPOINT:
             checkpoint_id = command.payload.get("checkpoint_id")
-            if checkpoint_id not in self._checkpoint_states:
+            if checkpoint_id not in self._checkpoints:
                 raise ValueError("Unknown checkpoint identifier")
-            self.adapter.restore_state(self._checkpoint_states[checkpoint_id])
+            self.adapter.restore_state(self._checkpoints[checkpoint_id].engine_state)
             self._emit(
                 EventType.CHECKPOINT_RESTORED,
                 actor=command.actor,
@@ -208,7 +219,6 @@ class VpeRuntime:
             simulation_time_s=self.adapter.simulation_time_s,
             engine_version=self.adapter.engine_version,
             telemetry=self.adapter.telemetry(self.scenario.telemetry_keys),
-            adapter_state=self.adapter.save_state(),
             reason=reason,
         )
         self.evidence.append_snapshot(snapshot)

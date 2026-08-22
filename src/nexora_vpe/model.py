@@ -72,12 +72,13 @@ class Event:
 
 @dataclass(frozen=True)
 class Snapshot:
+    """Lightweight canonical-replay state with no restorable engine artifact."""
+
     snapshot_id: str
     scenario_id: str
     simulation_time_s: float
     engine_version: str
     telemetry: Mapping[str, float]
-    adapter_state: Mapping[str, Any]
     reason: str
 
     def as_dict(self) -> dict[str, Any]:
@@ -87,6 +88,20 @@ class Snapshot:
             "simulation_time_s": self.simulation_time_s,
             "engine_version": self.engine_version,
             "telemetry": dict(self.telemetry),
-            "adapter_state": dict(self.adapter_state),
             "reason": self.reason,
         }
+
+
+@dataclass(frozen=True)
+class CheckpointArtifact:
+    """In-session restorable physiology artifact, separate from canonical replay.
+
+    ``engine_state`` is adapter-private metadata. It may contain a local Pulse
+    state path and is intentionally not included in a client-facing snapshot.
+    """
+
+    checkpoint_id: str
+    scenario_id: str
+    simulation_time_s: float
+    engine_version: str
+    engine_state: Mapping[str, Any]
