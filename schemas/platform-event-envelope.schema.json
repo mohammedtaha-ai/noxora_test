@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexora.example/schemas/platform-event-envelope/v1",
+  "title": "Nexora Platform Event Envelope v1",
+  "description": "Portable platform-level event schema. This is distinct from the S0 runtime event envelope and excludes raw Pulse/VPE internal state, secrets, PII without an approved policy, and artifact bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "producer",
+    "tenant_id",
+    "aggregate_type",
+    "aggregate_id",
+    "routing_key",
+    "classification",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Immutable delivery/idempotency identifier. UUIDv7 is the Nexora generation preference."
+    },
+    "event_type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:\\.[a-z][a-z0-9_]*)+$",
+      "description": "Stable semantic name, for example simulation.session.started."
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC wall-clock event time, not simulation time."
+    },
+    "producer": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z][a-z0-9_]*)+$"
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Ownership and audit context, never an authorization credential."
+    },
+    "aggregate_type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+    },
+    "aggregate_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "routing_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "Future partition/order key; session events normally use session ID."
+    },
+    "classification": {
+      "type": "string",
+      "enum": ["PUBLIC", "INTERNAL", "RESTRICTED"]
+    },
+    "payload": {
+      "type": "object",
+      "description": "Version-specific, JSON-compatible, minimum-necessary semantic data."
+    },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "causation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  }
+}

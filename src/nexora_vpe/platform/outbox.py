@@ -41,9 +41,9 @@ def _parse_time(value: str) -> datetime:
 
 
 def _event_from_mapping(value: Mapping[str, Any]) -> PlatformEvent:
-    scope_value = value.get("scope")
-    if not isinstance(scope_value, Mapping):
-        raise OutboxError("stored event scope is invalid")
+    tenant_id = value.get("tenant_id")
+    if not isinstance(tenant_id, str):
+        raise OutboxError("stored event tenant_id is invalid")
     payload = value.get("payload")
     if not isinstance(payload, Mapping):
         raise OutboxError("stored event payload is invalid")
@@ -56,7 +56,7 @@ def _event_from_mapping(value: Mapping[str, Any]) -> PlatformEvent:
         schema_version=value.get("schema_version"),
         occurred_at=_parse_time(occurred_at),
         producer=str(value.get("producer", "")),
-        scope=TenantScope(tenant_id=str(scope_value.get("tenant_id", ""))),
+        scope=TenantScope(tenant_id=tenant_id),
         aggregate_type=str(value.get("aggregate_type", "")),
         aggregate_id=str(value.get("aggregate_id", "")),
         routing_key=str(value.get("routing_key", "")),

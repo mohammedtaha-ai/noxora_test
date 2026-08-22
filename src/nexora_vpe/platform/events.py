@@ -113,10 +113,16 @@ class PlatformEvent:
             object.__setattr__(self, "trace_id", require_identifier(self.trace_id, field_name="trace_id"))
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a portable JSON-ready representation with stable field names."""
+        """Return the language-neutral schema representation of this event.
+
+        ``TenantScope`` is a Python convenience type only.  The portable
+        envelope carries ``tenant_id`` at top level so that the JSON Schema,
+        non-Python generators, and outbox payloads share one public shape.
+        """
 
         values = asdict(self)
-        values["scope"] = {"tenant_id": self.scope.tenant_id}
+        values.pop("scope", None)
+        values["tenant_id"] = self.scope.tenant_id
         values["classification"] = self.classification.value
         values["occurred_at"] = self.occurred_at.isoformat().replace("+00:00", "Z")
         return values
