@@ -2,6 +2,7 @@
 
 **الحالة:** عقد جديد مستقل للمنصة.  
 **غير بديل:** لا يستبدل `schemas/event-envelope.schema.json` الخاص بـS0، ولا ينشر Kafka أو broker في هذه الدفعة.
+**المصدر المحايد للغة:** [`schemas/platform-event-envelope.schema.json`](../../schemas/platform-event-envelope.schema.json) هو schema envelope v1؛ تمثل `PlatformEvent` Python تنفيذًا مرجعيًا/اختباريًا له وليست المصدر القانوني للعقود العابرة للغات.
 
 ## الهدف
 
@@ -66,7 +67,8 @@
 2. `event_type` يمثل semantic event، و`schema_version` يمثل تطور شكله. لا تستعمل topic name لإخفاء version.
 3. producer يكتب نسخة واحدة صالحة لكل event ID. لا تحدث outbox record لتعديل payload بعد commit.
 4. consumer يصرح بالـversions المقبولة، ويعزل unknown version/quarantine بدلاً من إسقاطه بصمت.
-5. serialization الحالي JSON-compatible؛ قرار Avro/schema registry مؤجل حتى `EVT-SCHEMA-04`.[1]
+5. serialization الحالي JSON-compatible ويتحقق shape envelope بواسطة `schemas/platform-event-envelope.schema.json`؛ قرار Avro/schema registry مؤجل حتى `EVT-SCHEMA-04`.[1]
+6. Python `TenantScope` helper لا يظهر في envelope؛ يخرج `tenant_id` top-level كي يطابق schema وconsumers في Laravel/Go/Python/C#.
 
 ## delivery وordering
 
@@ -108,3 +110,4 @@ owner transaction
 [1]: ../research/event-platform-comparison.md "Nexora: مقارنة منصة الأحداث"
 [2]: https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html "Debezium Outbox Event Router"
 [3]: https://datatracker.ietf.org/doc/rfc9562/ "RFC 9562: UUIDs"
+[4]: ../decisions/ADR-005-cross-language-contracts.md "ADR-005: Cross-Language Contracts"
