@@ -19,6 +19,7 @@ from .runtime import VpeRuntime
 @dataclass(frozen=True)
 class TickResult:
     tick_index: int
+    requested_tick_s: float
     advanced_simulation_s: float
     wall_elapsed_s: float
     slept_s: float
@@ -32,7 +33,7 @@ class VpePacedHost:
 
     runtime: VpeRuntime
     facade: VpeClientFacade
-    tick_simulation_s: float = 0.25
+    tick_simulation_s: float = 0.5
     monotonic: Callable[[], float] = time.monotonic
     sleep: Callable[[float], None] = time.sleep
     _tick_index: int = field(init=False, default=0)
@@ -53,12 +54,14 @@ class VpePacedHost:
         if self.runtime.state != RuntimeState.RUNNING:
             return TickResult(
                 tick_index=self._tick_index,
+                requested_tick_s=self.tick_simulation_s,
                 advanced_simulation_s=0.0,
                 wall_elapsed_s=0.0,
                 slept_s=0.0,
                 overrun_s=0.0,
                 state=self.runtime.state,
             )
+        before_simulation_s = self.runtime.simulation_time_s
         started = self.monotonic()
         try:
             self.facade.process_pending()
@@ -84,7 +87,8 @@ class VpePacedHost:
         self._tick_index += 1
         return TickResult(
             tick_index=self._tick_index,
-            advanced_simulation_s=self.tick_simulation_s,
+            requested_tick_s=self.tick_simulation_s,
+            advanced_simulation_s=self.runtime.simulation_time_s - before_simulation_s,
             wall_elapsed_s=elapsed,
             slept_s=slept,
             overrun_s=max(0.0, -remaining),

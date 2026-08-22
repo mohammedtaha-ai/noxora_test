@@ -11,7 +11,14 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from nexora_vpe import PulseAdapter, PulseAdapterConfig, VpeRuntime, load_s0_scenario
+from nexora_vpe import (
+    PulseAdapter,
+    PulseAdapterConfig,
+    VpeClientFacade,
+    VpePacedHost,
+    VpeRuntime,
+    load_s0_scenario,
+)
 from nexora_vpe.model import CommandKind, EventType
 
 
@@ -211,6 +218,21 @@ class PulseAdapterIntegrationTests(unittest.TestCase):
                 places=6,
             )
         self.assertEqual(EventType.CHECKPOINT_RESTORED, self.runtime.events()[-4].event_type)
+
+    def test_paced_host_advances_real_pulse_in_vpe_owned_half_second_ticks(self) -> None:
+        facade = VpeClientFacade(self.runtime)
+        host = VpePacedHost(self.runtime, facade, tick_simulation_s=0.5, sleep=lambda _: None)
+        result = host.tick_once()
+        self.assertAlmostEqual(0.5, result.requested_tick_s, places=6)
+        self.assertAlmostEqual(0.5, result.advanced_simulation_s, places=6)
+        self.assertAlmostEqual(0.5, self.runtime.simulation_time_s, places=6)
+        snapshot = facade.current_snapshot()
+        self.assertIsNotNone(snapshot)
+        assert snapshot is not None
+        self.assertEqual(
+            {"heart_rate_bpm", "mean_arterial_pressure_mmhg", "oxygen_saturation"},
+            set(snapshot.telemetry),
+        )
 
     def test_adapter_rejects_unconstrained_compound_before_it_reaches_pulse(self) -> None:
         before_time = self.runtime.simulation_time_s

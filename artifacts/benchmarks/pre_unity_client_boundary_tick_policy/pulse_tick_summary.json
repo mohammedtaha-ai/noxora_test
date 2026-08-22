@@ -1,0 +1,73 @@
+{
+  "limitations": [
+    "Local sandbox headless engineering measurement only; no Unity frame, rendering, or network cost.",
+    "Host sleep is disabled during measurement; sleep_budget_s is the budget a 1x paced loop would use.",
+    "process_time is a local process CPU indicator, not a full system CPU profile."
+  ],
+  "measured_at_utc": "2026-08-22T21:35:26.607855+00:00",
+  "policy": {
+    "reason": "the measured Pulse step matches the requested 0.5-second increment with a material 1x sleep budget; no catch-up on overrun",
+    "selected_tick_simulation_s": 0.5
+  },
+  "pulse_root": "/home/ubuntu/pulse-build/install",
+  "scenario": "trauma_splenic_01",
+  "tick_results": [
+    {
+      "active_wall_ms_median": 3.926847,
+      "active_wall_ms_p95": 5.836505699999998,
+      "client_projection_ms_median": 0.003805,
+      "cpu_ms_median": 0.161654,
+      "max_overrun_s": 0.0,
+      "paced_sleep_budget_ms_median": 96.14028492942452,
+      "samples": 15,
+      "simulation_time_delta_s": 0.1,
+      "tick_simulation_s": 0.1
+    },
+    {
+      "active_wall_ms_median": 9.659053,
+      "active_wall_ms_p95": 10.115758099999999,
+      "client_projection_ms_median": 0.003405,
+      "cpu_ms_median": 0.166047,
+      "max_overrun_s": 0.0,
+      "paced_sleep_budget_ms_median": 240.40763697121292,
+      "samples": 15,
+      "simulation_time_delta_s": "VARIES",
+      "tick_simulation_s": 0.25
+    },
+    {
+      "active_wall_ms_median": 17.835286,
+      "active_wall_ms_p95": 19.6122394,
+      "client_projection_ms_median": 0.003926,
+      "cpu_ms_median": 0.179981,
+      "max_overrun_s": 0.0,
+      "paced_sleep_budget_ms_median": 482.2282809764147,
+      "samples": 15,
+      "simulation_time_delta_s": 0.5,
+      "tick_simulation_s": 0.5
+    },
+    {
+      "active_wall_ms_median": 35.209184,
+      "active_wall_ms_p95": 37.2203539,
+      "client_projection_ms_median": 0.004186,
+      "cpu_ms_median": 0.180562,
+      "max_overrun_s": 0.0,
+      "paced_sleep_budget_ms_median": 964.8622329114005,
+      "samples": 15,
+      "simulation_time_delta_s": 1.0,
+      "tick_simulation_s": 1.0
+    },
+    {
+      "active_wall_ms_median": 69.213,
+      "active_wall_ms_p95": 73.065589,
+      "client_projection_ms_median": 0.006259,
+      "cpu_ms_median": 0.208133,
+      "max_overrun_s": 0.0,
+      "paced_sleep_budget_ms_median": 1930.868623079732,
+      "samples": 15,
+      "simulation_time_delta_s": 2.0,
+      "tick_simulation_s": 2.0
+    }
+  ],
+  "ticks_per_trial": 5,
+  "trials": 3
+}
