@@ -208,7 +208,7 @@ def main() -> None:
     ])
 
     OUT_JSON.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
-    OUT_MD.write_text("\n".join(markdown_sections) + "\n", encoding="utf-8")
+    OUT_MD.write_text("\n".join(markdown_sections).rstrip() + "\n", encoding="utf-8")
     print(f"Wrote {OUT_JSON}")
     print(f"Wrote {OUT_MD}")
 

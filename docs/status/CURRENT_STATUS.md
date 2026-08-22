@@ -2,7 +2,7 @@
 
 ## المرحلة الحالية
 
-**المرحلة:** اكتملت Gate A ونواة S0 headless المصغرة واختباراتها الأولية؛ المعلَم التالي هو **M2 runtime integration** عبر adapter Pulse إنتاجي قابل لإعادة التشغيل.
+**المرحلة:** اكتملت Gate A ونواة S0 headless وPulseAdapter الإنتاجي واختبارات التكامل الأولية؛ أساس **M2 runtime integration** متحقق هندسيًا.
 **الفرع العامل:** `manus/s0-foundation`.
 **البوابات:** Gate A — **اجتياز هندسي مشروط**؛ Gate 0 — البروتوكول جاهز لكن لم تجمع بيانات مشاركين.
 
@@ -18,6 +18,7 @@
 | توجد نواة S0 headless ذات ساعة VPE وطابور أوامر وعقد سيناريو ومخزن أحداث/لقطات. | **IMPLEMENTED + TESTED** | [`src/nexora_vpe/`](../../src/nexora_vpe/) و[تقرير التحقق](../reports/003-s0-core-verification.md). |
 | رفض أفعال/نوايا غير معتمدة، وحفظ/استعادة checkpoint داخل النواة، وترتيب الأوامر. | **VERIFIED** | 8 اختبارات `unittest` موثقة في تقرير التحقق. |
 | bridge C++ يربط Pulse SDK مباشرة ويحمل الحالة ويطبق نزفًا طحاليًا ويحفظ ويستعيد. | **VERIFIED** | [`src/physiology/pulse_bridge/`](../../src/physiology/pulse_bridge/) وartifact المصغر. |
+| `PulseAdapter` الإنتاجي يملك عملية Pulse واحدة ويتحقق من revision، ويطبق زمن S0 وتدخلاته المقيدة وcheckpoint والاستعادة. | **IMPLEMENTED + INTEGRATION TESTED** | [عقد العملية](../contracts/pulse-adapter-process-contract.md) و[تقرير التكامل](../reports/004-pulse-adapter-integration.md). |
 | بروتوكول Gate 0 موجود مع ضوابط ومعايير Pivot/Stop. | **VERIFIED** كوثيقة تصميم فقط | [بروتوكول Gate 0](../research/gate-0-value-discovery-protocol.md). |
 
 ## ملاحظات ومخاطر مثبتة
@@ -25,7 +26,7 @@
 | البند | الحالة | المعالجة المطلوبة |
 |---|---|---|
 | يطبع `PulseScenarioDriver` رسالة تشخيص زمنية بعد استعادة state لأن الزمن النهائي مطلق بينما مدة السيناريو نسبية. | **OBSERVED**؛ ليس فشل استمرار | يتحقق adapter من الزمن المطلق والـtelemetry/CSV، لا من الرسالة وحدها. |
-| `DeterministicPhysiologyAdapter` هو test double لطبقة orchestration. | **INTENTIONAL** | لا يعرض كبديل Pulse أو كنموذج سريري؛ يجب تنفيذ adapter Pulse إنتاجي. |
+| `DeterministicPhysiologyAdapter` هو test double لطبقة orchestration. | **INTENTIONAL** | يبقى للاختبارات السريعة فقط؛ المسار الإنتاجي المختبر هو `PulseAdapter`. |
 | لا توجد صلاحية سريرية أو تعليمية مستقلة. | **OUT OF SCOPE / UNTESTED** | تتطلب مراجعة مختصين ومنهج تحقق منفصل. |
 | لا يُختار ترخيص للمستودع بعد. | **OPEN** | راجع provenance Pulse وخطة توزيع قبل أي إطلاق. |
 
@@ -33,7 +34,7 @@
 
 | البند | الحالة | الأثر |
 |---|---|---|
-| adapter Pulse إنتاجي وربط runtime طويل العمر | **NEXT** | مطلوب لإكمال M2 headless runtime دون الاعتماد على test double. |
+| استعادة crash متقدمة وإدارة عمليات متعددة | **DEFERRED** | لا يعيد adapter تنفيذ أمر زمني تلقائيًا؛ أي recovery يحتاج checkpoint صريحًا. |
 | Unity وFAST spatial resolver | **DEFERRED** | لا يدّعى إتمام M3 أو M4. |
 | التاريخ المقيد مع AI patient وLLM/debrief | **DEFERRED** | لا تعتمد النواة على الشبكة أو نموذج لغوي. |
 | Gate 0 قيمة المنتج | **UNTESTED** | لا يمثل البروتوكول اجتيازًا للبوابة. |
@@ -46,16 +47,17 @@
 2. VPE هو مالك الزمن وترتيب الأوامر، وPulse لا يصل إليه إلا عبر adapter ضيق؛ انظر [ADR-001](../decisions/ADR-001-pulse-process-topology.md).
 3. تستخدم إعادة العرض canonical events + snapshots، ولا تدّعي determinism عامًّا.
 4. تبقى حالة البداية والنزف والتدخلات ضمن عقد S0 المحدود ولا تُعرض كمشورة علاجية.
-5. لا تدخل Unity أو LLM أو ميزة خارج نطاق S0 قبل اكتمال runtime integration والبوابات ذات الصلة.
+5. لا تدخل Unity أو LLM أو ميزة خارج نطاق S0 قبل قرار مرحلة مستقل واكتمال البوابات ذات الصلة.
 
 ## أحدث الأدلة
 
 - [Gate A](../reports/002-pulse-gate-a.md) — البناء والتجارب والنتائج والحدود.
 - [تحقق نواة S0 والـbridge](../reports/003-s0-core-verification.md) — اختبارات runtime وSDK المباشر.
+- [تكامل PulseAdapter](../reports/004-pulse-adapter-integration.md) و[عقد العملية](../contracts/pulse-adapter-process-contract.md) — عملية SDK طويلة العمر واختبارات المسار الكامل.
 - [`summary.md`](../../experiments/pulse_gate_a/results/2026-08-22/summary.md) و[`SHA256SUMS.txt`](../../experiments/pulse_gate_a/results/2026-08-22/SHA256SUMS.txt) — أدلة Gate A الحتمية.
 - [`pulse_sdk_bridge.json`](../../artifacts/representative-small-results/pulse_sdk_bridge.json) و[`s0_runtime_demo.json`](../../artifacts/representative-small-results/s0_runtime_demo.json) — artifacts تمثيلية صغيرة.
 - [provenance والترخيص](../research/pulse-provenance-and-license.md) — مصدر Pulse والالتزامات التي يلزم مراجعتها.
 
 ## الخطوة التالية المخططة
 
-تنفيذ `PulseAdapter` إنتاجي يستهلك SDK أو عملية محلية مضبوطة، ثم تشغيل integration tests على نفس عقد S0 قبل التفكير في Unity. يبقى Gate 0 متطلبًا مستقلًا لقيمة المنتج ولا يؤجل بالنجاح الهندسي وحده.
+إجراء مراجعة محتوى طبي/تعليمي مستقلة لمسار S0 وGate 0، ثم اتخاذ قرار صريح حول M3 Unity. يبقى Gate 0 متطلبًا مستقلًا لقيمة المنتج ولا يؤجل بالنجاح الهندسي وحده.

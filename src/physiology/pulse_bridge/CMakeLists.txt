@@ -9,5 +9,9 @@ find_package(Pulse REQUIRED CONFIG)
 add_executable(nexora_pulse_bridge main.cpp)
 target_compile_features(nexora_pulse_bridge PRIVATE cxx_std_17)
 target_link_libraries(nexora_pulse_bridge PRIVATE Pulse::Pulse)
-
 target_compile_options(nexora_pulse_bridge PRIVATE -Wall -Wextra -Wpedantic)
+
+add_executable(nexora_pulse_adapter_server ../pulse_adapter/adapter_server.cpp)
+target_compile_features(nexora_pulse_adapter_server PRIVATE cxx_std_17)
+target_link_libraries(nexora_pulse_adapter_server PRIVATE Pulse::Pulse)
+target_compile_options(nexora_pulse_adapter_server PRIVATE -Wall -Wextra -Wpedantic)

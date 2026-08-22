@@ -9,6 +9,7 @@ from .adapter import DeterministicPhysiologyAdapter, PhysiologyAdapter
 from .runtime import VpeRuntime
 from .scenario import S0Scenario
 from .scenario_io import load_s0_scenario
+from .pulse_adapter import PulseAdapter, PulseAdapterConfig, PulseAdapterError
 
 __all__ = [
     "DeterministicPhysiologyAdapter",
@@ -16,4 +17,7 @@ __all__ = [
     "S0Scenario",
     "VpeRuntime",
     "load_s0_scenario",
+    "PulseAdapter",
+    "PulseAdapterConfig",
+    "PulseAdapterError",
 ]
