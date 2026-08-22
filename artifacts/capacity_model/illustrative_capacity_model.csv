@@ -1,0 +1,4 @@
+registered_learners,illustrative_active_sessions,canonical_events_per_minute,canonical_events_per_day,canonical_event_gib_per_day,telemetry_samples_per_second,telemetry_samples_per_day,telemetry_gib_per_day,durable_checkpoints_per_minute,checkpoint_gib_per_day
+1000,50,400,576000,0.549,100,8640000,1.609,5,14.062
+100000,5000,40000,57600000,54.932,10000,864000000,160.933,500,1406.250
+1000000,50000,400000,576000000,549.316,100000,8640000000,1609.325,5000,14062.500
