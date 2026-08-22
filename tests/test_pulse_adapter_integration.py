@@ -124,6 +124,32 @@ class PulseAdapterIntegrationTests(unittest.TestCase):
         )
         self.assertTrue(all(math.isfinite(value) for value in after_intervention.telemetry.values()))
 
+    def test_normal_runtime_snapshots_do_not_create_pulse_state_files(self) -> None:
+        def state_files() -> list[Path]:
+            return sorted(Path(self.state_directory.name).glob("pulse-state-*.json"))
+
+        self.assertEqual([], state_files())
+        self.runtime.submit(CommandKind.ADVANCE_TIME, "learner", {"duration_s": 10.0})
+        self.runtime.drain()
+        self.assertEqual([], state_files())
+
+        self.runtime.submit(
+            CommandKind.APPLY_INTERVENTION,
+            "learner",
+            {"intervention_id": "crystalloid_saline"},
+        )
+        self.runtime.drain()
+        self.assertEqual([], state_files())
+
+        self.runtime.submit(CommandKind.CREATE_CHECKPOINT, "learner", {"checkpoint_id": "explicit"})
+        self.runtime.drain()
+        artifacts = self.runtime.checkpoint_artifacts()
+        self.assertEqual(1, len(artifacts))
+        self.assertEqual(1, len(state_files()))
+        state_path = Path(str(artifacts[0].engine_state["state_path"]))
+        self.assertTrue(state_path.is_file())
+        self.assertGreater(state_path.stat().st_size, 0)
+
     def test_checkpoint_restore_continues_on_the_same_pulse_trajectory(self) -> None:
         self.runtime.submit(CommandKind.ADVANCE_TIME, "learner", {"duration_s": 120.0})
         self.runtime.submit(CommandKind.CREATE_CHECKPOINT, "learner", {"checkpoint_id": "at_120"})
