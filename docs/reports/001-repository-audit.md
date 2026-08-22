@@ -96,8 +96,8 @@ find . -path './.git' -prune -o -type f -print | sort
 
 ## التزام مرجعي
 
-سيُستكمل هذا الحقل بعد إنشاء الالتزام ودفعه والتحقق من الفرع البعيد:
+التزام التأسيس والتدقيق: [`3d16ce6`](https://github.com/mohammedtaha-ai/noxora_test/commit/3d16ce60897dc1552548a2fe8f14a7dfc7609f3b) — دُفع إلى `origin/manus/s0-foundation` وتحقق المرجع البعيد منه في 2026-08-22.
 
 ```text
-PENDING: أول التزام تأسيس وتدقيق
+3d16ce60897dc1552548a2fe8f14a7dfc7609f3b  refs/heads/manus/s0-foundation
 ```
