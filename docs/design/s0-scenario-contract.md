@@ -1,21 +1,24 @@
-# عقد سيناريو S0 — v1.1
+# عقد سيناريو S0 — v1.2
 
 ## الغرض
 
-يعرّف هذا العقد الحد الأدنى الذي يستطيع مؤلف سيناريو غير مبرمج فهمه ومراجعته. لا يعرّف بروتوكولًا علاجيًا ولا يتيح أوامر Pulse خامة من العميل.
+يعرّف هذا العقد الحد الأدنى الذي يستطيع مؤلف سيناريو غير مبرمج فهمه ومراجعته. لا يعرّف بروتوكولًا علاجيًا، ولا يتيح أوامر Pulse خامة من العميل، ولا ينشئ نتيجة نجاح أو فشل للمتعلم.
+
+> ملف السيناريو authoritative: إمّا أن يحفظه نموذج `S0Scenario` ويتحقق منه loader، أو يرفضه loader. لا توجد حقول زخرفية أو صامتة في عقد v1.2.
 
 ## نموذج السيناريو
 
 ```yaml
-schema_version: "1.1"
+schema_version: "1.2"
 id: "trauma_splenic_01"
 title: "Abdominal trauma: active splenic hemorrhage"
 mode: "learning"
+pulse_revision: "<pinned revision>"
 patient:
   template: "adult_male_standard"
 pathology:
   existing_internal_hemorrhage:
-    compartment: "spleen"
+    compartment: "Spleen"
     flow_rate_ml_min: 60
 learning_objectives:
   - "identify_deterioration"
@@ -28,11 +31,14 @@ history:
     - "PAIN_ONSET"
     - "PAIN_LOCATION"
     - "MECHANISM_OF_INJURY"
-    - "SUSPECT_INTERNAL_BLEEDING"
+clinical_hypotheses:
+  allowed:
+    - "INTERNAL_BLEEDING"
 observations:
-  fast:
-    enabled: true
-    controlled_finding: "free_fluid_positive"
+  allowed:
+    - id: "FAST"
+      enabled: true
+      controlled_finding: "free_fluid_positive"
 interventions:
   allowed:
     - id: "crystalloid_saline"
@@ -51,27 +57,33 @@ telemetry:
   - "mean_arterial_pressure_mmhg"
   - "blood_volume_ml"
   - "total_hemorrhaged_volume_ml"
+  - "oxygen_saturation"
 completion:
   success_rules: []
   failure_rules: []
 ```
 
+المخطط المنشور هو [`schemas/s0-scenario.schema.json`](../../schemas/s0-scenario.schema.json). يفرض loader تساوي مفاتيح المستوى الأعلى، ويرفض المفاتيح الزائدة أو الناقصة أو معرفات القوائم المتكررة قبل بناء نموذج المجال.
+
 ## قواعد التحقق
 
 | القاعدة | سببها |
 |---|---|
-| `schema_version` يجب أن يساوي النسخة المعروفة للنواة. | منع تفسير ملف مجهول. |
-| `mode` في S0 يساوي `learning`. | يمنع تسرب وضع تقييم عال العواقب. |
-| النزف جزء من `pathology` عند البدء لا من أمر المتعلم. | الإصابة موجودة قبل البداية. |
-| التدخلات تشير إلى قاموس محدود. | يمنع إرسال نصوص أو أوامر Pulse خامة. |
-| قائمة telemetry عبارة عن مفاتيح داخلية مسموحة. | تفصل واجهة S0 عن أسماء أعمدة Pulse. |
-| `escalations.allowed` قاموس غير فارغ من معرفات ثابتة. | يمنع نصوص التصعيد الحرة ويحفظ دليلًا قابلًا للمراجعة. |
-| لا توجد قواعد نجاح/فشل في S0. | يبقى التقييم تكوينيًا. |
+| `schema_version` يساوي `1.2`. | منع تفسير ملف قديم أو غير معروف. |
+| `mode` يساوي `learning`. | يمنع تسرب وضع تقييم عالي العواقب. |
+| النزف جزء من `pathology` عند البدء. | الإصابة موجودة قبل البداية، وليست أمر متعلم. |
+| `learning_objectives` تحفظ كنصوص مؤلفة غير فارغة. | يمنع فقد الهدف التعليمي من الملف المصدر. |
+| `history.allowed_intents` يقتصر على أسئلة/محاولات استجلاء معلومة من المريض. | يفصل جمع التاريخ عن الاستدلال. |
+| `clinical_hypotheses.allowed` يصرح بفرضيات منظمة فقط. | يسجل استدلال المتعلم دون نص حر أو ادعاء تشخيص واقعي. |
+| `VITALS` قدرة monitor مدمجة؛ `FAST` و`CBC` لا يظهران إلا عند تأليفهما في `observations.allowed`. | مصدر حقيقة واحد لقائمة الملاحظات. |
+| تدخلات Pulse تشير إلى قاموس محدود. | يمنع نصوص أو أوامر Pulse خامة. |
+| `escalations.allowed` قاموس ثابت غير فارغ. | يمنع نصوص التصعيد الحرة ويحفظ دليلًا قابلًا للمراجعة. |
+| قواعد `completion` فارغة في S0. | تبقي النتيجة تكوينية ولا تصنع نجاحًا/فشلًا عالي العواقب. |
 
 ## عقد الحدث
 
-يلزم أن يطابق كل حدث مخطط `schemas/event-envelope.schema.json` وأن يحتوي على: `event_id`، `scenario_id`، `simulation_time_s`، `event_type`، `actor`، `payload`، `source`، و`schema_version`. يرفض runtime الأنواع غير المعروفة أو الأفعال غير المبررة بعقد السيناريو. بالنسبة إلى التصعيد، يقبل `record_escalation` معرفًا موجودًا في `escalations.allowed` وينشر `escalation.recorded` مع `command_id` و`escalation_id` فقط؛ لا يغير هذا المسار Pulse أو الزمن أو حالة النجاح/الفشل.
+يلزم أن يطابق كل حدث [`schemas/event-envelope.schema.json`](../../schemas/event-envelope.schema.json). تشمل الأحداث المنظمة: `clinical.intent.recorded` و`clinical.hypothesis.recorded` و`observation.requested` و`escalation.recorded`، إضافة إلى أحداث الزمن والتدخل واللقطات والـcheckpoint. لا يغير history أو hypothesis أو observation أو escalation محرك Pulse أو زمن المحاكاة في S0.
 
-## عقد adapter
+## Snapshot وcheckpoint
 
-يقبل adapter الداخلي أربعة آثار محكومة: تطبيق تدخل من قاموس، تقدم زمن، حفظ snapshot، واستعادة snapshot. تدير VPE ساعة المحاكاة وترتيب الأوامر؛ لا تملك Unity أو طبقة اللغة Pulse مباشرة.
+`Snapshot` حدث عرض/مراجعة خفيف يحوي الهوية والزمن وإصدار المحرك وtelemetry وسبب النشر؛ لا يحمل state قابلًا للاستعادة. `CREATE_CHECKPOINT` فقط ينشئ artifact محرك منفصل. وتبقى استعادة checkpoint داخل الجلسة مثبتة، أما الاستعادة عبر إعادة تشغيل Runtime فغير مثبتة في S0. التفاصيل في [عقد PulseAdapter](../contracts/pulse-adapter-process-contract.md).

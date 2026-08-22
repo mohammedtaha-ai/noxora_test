@@ -7,18 +7,20 @@
 | معرف الدليل | المصدر الموثوق | الحدث الناشر | المستهلك | حدود التفسير |
 |---|---|---|---|---|
 | `E-STATE` | لقطة محرك/تيليمترية | `snapshot.published` | timeline، monitor، debrief | قيمة محاكاة مثبتة بالإصدار، وليست قيمة مريض حقيقي. |
-| `E-HISTORY` | نية تاريخ منظمة | `clinical.intent.recorded` | debrief | يوثق النية المختارة، لا جودة الحوار الحر. |
-| `E-OBSERVATION` | طلب ملاحظة من السيناريو | `observation.requested` | debrief، واجهة مستقبلية | لا يساوي نتيجة فحص حر قبل وجود resolver محدد. |
+| `E-HISTORY` | نية تاريخ منظمة | `clinical.intent.recorded` | debrief | يوثق محاولة استجلاء معلومة، لا جودة الحوار الحر. |
+| `E-HYPOTHESIS` | فرضية سريرية منظمة | `clinical.hypothesis.recorded` | debrief | يسجل اختيارًا ضمن السيناريو، لا تشخيصًا واقعيًا أو نصًا حرًا. |
+| `E-OBSERVATION` | `VITALS` المدمج أو طلب مؤلف في السيناريو | `observation.requested` | debrief، واجهة مستقبلية | لا يساوي نتيجة فحص حر قبل وجود resolver محدد. |
 | `E-FAST` | resolver + finding مضبوط بالسيناريو | `fast.acquisition.recorded` | debrief | مؤجل حتى مرحلة FAST؛ لا يمثل تصويرًا طبيًا حرًا. |
 | `E-ESCALATION` | معرف مصرح به في قاموس السيناريو | `escalation.recorded` | timeline، debrief | يثبت نية منظمة فقط؛ لا يغير Pulse ولا يثبت ملاءمة القرار واقعيًا. |
 | `E-INTERVENTION` | أمر مقبول وقاموس تدخلات | `intervention.applied` | Pulse adapter، timeline | قبول المحرك ليس توصية أو مصادقة طبية. |
 | `E-TIMELINE` | ساعة VPE وتسلسل أوامر | جميع أحداث envelope | replay، debrief | زمن محاكاة فقط؛ لا يضم زمن شبكي أو LLM. |
-| `E-CHECKPOINT` | snapshot وحالة فرع | `checkpoint.created` | retry/debug | الاستعادة مشروطة بإصدار المحرك وعقد adapter. |
+| `E-CHECKPOINT` | artifact محرك منفصل وdigest | `checkpoint.created` | retry/debug | artifact داخل الجلسة؛ الاستعادة مشروطة بالإصدار وعقد adapter ولا تثبت الاستمرارية عبر إعادة التشغيل. |
+| `E-REQUEST` | `request_id` وoutcome داخل الجلسة | event مقبول مرتبط بالأمر | Facade مستقبلي | يمنع التكرار داخل Runtime فقط، ولا يثبت exactly-once موزعًا أو عبر جلسة جديدة. |
 
 ## الحد الأدنى لنشر لقطة
 
-ينشر runtime لقطة منظمة بعد تقدم زمن أو تدخل مقبول أو إنشاء checkpoint. تتضمن اللقطة معرف السيناريو، زمن المحاكاة، نسخة engine، قيم تيليمترية مسموحة، ومؤشر artifact إن وجد. لا تحفظ النواة نص LLM أو استنتاجات غير منظمة داخل اللقطة.
+ينشر runtime لقطة منظمة بعد تقدم زمن أو تدخل مقبول أو إنشاء checkpoint. تتضمن اللقطة معرف السيناريو، زمن المحاكاة، نسخة engine، قيم telemetry مسموحة، وسبب النشر فقط. لا تتضمن `adapter_state` أو مسار artifact أو digest checkpoint، ولا تحفظ نص LLM أو استنتاجات غير منظمة. يمثل artifact checkpoint مجالًا منفصلًا قابلًا للاستعادة داخل الجلسة، وليس جزءًا من replay الكانوني.
 
 ## ارتباط Gate A
 
-تؤكد أدلة Gate A أن Pulse ينتج حقولًا مستخدمة في S0، منها معدل القلب وMAP وحجم الدم ومعدل/حجم النزف والأكسجة، وأن لقطة حالة يمكن استعادتها. لذلك يفصل العقد بين **الاسم الدلالي الداخلي** و**اسم عمود Pulse الخارجي** كي لا يتسرب تمثيل CSV إلى بقية النواة.
+تؤكد أدلة Gate A أن Pulse ينتج حقولًا مستخدمة في S0، منها معدل القلب وMAP وحجم الدم ومعدل/حجم النزف والأكسجة، وأن artifact checkpoint للمحرك يمكن استعادته في المسار المختبر. لذلك يفصل العقد بين **الاسم الدلالي الداخلي** و**اسم عمود Pulse الخارجي** كي لا يتسرب تمثيل CSV إلى بقية النواة.
