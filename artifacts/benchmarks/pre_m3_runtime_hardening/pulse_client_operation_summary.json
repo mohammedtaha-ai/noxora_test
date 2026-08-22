@@ -1,0 +1,97 @@
+{
+  "limitations": [
+    "Local sandbox engineering measurement only; not a production or Unity frame-time benchmark.",
+    "Bootstrap process creation and CMake build time are excluded.",
+    "A checkpoint restore follows an extra 30-second advance and therefore has a negative simulation-time delta."
+  ],
+  "measured_at_utc": "2026-08-22T21:09:26.494701+00:00",
+  "operations": [
+    {
+      "checkpoint_size_bytes": null,
+      "latency_ms_max": 351.267023,
+      "latency_ms_mean": 348.9066572,
+      "latency_ms_median": 349.649054,
+      "latency_ms_min": 346.522975,
+      "latency_ms_p95": 351.1029718,
+      "latency_ms_stdev": 2.1954668697619253,
+      "operation": "advance_10s",
+      "samples": 5,
+      "simulation_time_delta_s": 9.999999999999854
+    },
+    {
+      "checkpoint_size_bytes": null,
+      "latency_ms_max": 4395.393496,
+      "latency_ms_mean": 4223.1276546,
+      "latency_ms_median": 4210.103685,
+      "latency_ms_min": 4129.62637,
+      "latency_ms_p95": 4363.4888804,
+      "latency_ms_stdev": 105.95948336476616,
+      "operation": "advance_120s",
+      "samples": 5,
+      "simulation_time_delta_s": 120.00000000002089
+    },
+    {
+      "checkpoint_size_bytes": null,
+      "latency_ms_max": 37.683818,
+      "latency_ms_mean": 37.220328800000004,
+      "latency_ms_median": 37.24337,
+      "latency_ms_min": 36.860629,
+      "latency_ms_p95": 37.6365992,
+      "latency_ms_stdev": 0.3612206998161922,
+      "operation": "advance_1s",
+      "samples": 5,
+      "simulation_time_delta_s": 1.0000000000000004
+    },
+    {
+      "checkpoint_size_bytes": null,
+      "latency_ms_max": 2109.659368,
+      "latency_ms_mean": 2090.2531702,
+      "latency_ms_median": 2094.951292,
+      "latency_ms_min": 2067.600495,
+      "latency_ms_p95": 2107.607725,
+      "latency_ms_stdev": 16.642222217188486,
+      "operation": "advance_60s",
+      "samples": 5,
+      "simulation_time_delta_s": 60.000000000003155
+    },
+    {
+      "checkpoint_size_bytes": 2334123,
+      "latency_ms_max": 59.478131,
+      "latency_ms_mean": 55.463782,
+      "latency_ms_median": 54.381774,
+      "latency_ms_min": 53.992736,
+      "latency_ms_p95": 58.6652152,
+      "latency_ms_stdev": 2.315347869495315,
+      "operation": "checkpoint_restore",
+      "samples": 5,
+      "simulation_time_delta_s": -30.000000000015348
+    },
+    {
+      "checkpoint_size_bytes": 2334123,
+      "latency_ms_max": 26.166437,
+      "latency_ms_mean": 24.8749292,
+      "latency_ms_median": 24.572707,
+      "latency_ms_min": 24.402634,
+      "latency_ms_p95": 25.8752608,
+      "latency_ms_stdev": 0.7303682034068153,
+      "operation": "checkpoint_save",
+      "samples": 5,
+      "simulation_time_delta_s": 0.0
+    },
+    {
+      "checkpoint_size_bytes": null,
+      "latency_ms_max": 0.073552,
+      "latency_ms_mean": 0.0669372,
+      "latency_ms_median": 0.071358,
+      "latency_ms_min": 0.04705,
+      "latency_ms_p95": 0.07346180000000001,
+      "latency_ms_stdev": 0.011225155620302109,
+      "operation": "telemetry_read",
+      "samples": 5,
+      "simulation_time_delta_s": 0.0
+    }
+  ],
+  "pulse_root": "/home/ubuntu/pulse-build/install",
+  "scenario": "trauma_splenic_01",
+  "trials": 5
+}
