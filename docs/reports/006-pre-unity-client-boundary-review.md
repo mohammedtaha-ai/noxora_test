@@ -69,7 +69,7 @@
 
 يطبق محمل سيناريو 1.2 فحوصًا مكافئة للـschema للأنواع، والحقول الناقصة/الزائدة، والتكرارات، والـtelemetry المرئية الآمنة. اختبرت المسارات السالبة: learning objectives وtelemetry وhistory/hypothesis types، finding، intervention number، duplicate observation id، ومحاولة عرض blood volume.
 
-**نتيجة الحزمة الكاملة:** **43 اختبارًا نجح في 25.407s** مع `PULSE_ROOT=/home/ubuntu/pulse-build/install` و`-W error::ResourceWarning`. تحتوي على **8 اختبارات تكامل فعلية مع Pulse SDK**؛ لم تقبل نتيجة نهائية مع skipped integration tests.
+**نتيجة الحزمة الكاملة:** **43 اختبارًا نجح في 25.540s** مع `PULSE_ROOT=/home/ubuntu/pulse-build/install` و`-W error::ResourceWarning`. تحتوي على **8 اختبارات تكامل فعلية مع Pulse SDK**؛ لم تقبل نتيجة نهائية مع skipped integration tests.
 
 ## Gate 0 والمراجعة الطبية
 

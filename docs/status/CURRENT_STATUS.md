@@ -29,7 +29,7 @@
 | النقل HTTP/JSON محلي على loopback فقط ولا يملك endpoint للساعة أو Pulse. | **VERIFIED** headless | [ADR-002](../decisions/ADR-002-local-client-facade-transport.md). |
 | VPE Host يملك تقدم الزمن؛ `PAUSED_BY_SYSTEM` لا يتقدم؛ لا catch-up بعد overrun. | **VERIFIED** للوحدة ومسار Pulse المحدد | [تقرير 006](../reports/006-pre-unity-client-boundary-review.md). |
 | tick `0.5s` يطابق تقدم Pulse المقاس؛ `0.25s` يتبدل بين 0.24/0.26s في البيئة المقاسة. | **OBSERVED** محليًا | [ملخص benchmark](../../artifacts/benchmarks/pre_unity_client_boundary_tick_policy/pulse_tick_summary.json). |
-| الحزمة الكاملة شغلت مع Pulse الحقيقي. | **VERIFIED** | **43 اختبارًا نجح في 25.407s**، منها **8** تكاملات Pulse SDK فعلية. |
+| الحزمة الكاملة شغلت مع Pulse الحقيقي. | **VERIFIED** | **43 اختبارًا نجح في 25.540s**، منها **8** تكاملات Pulse SDK فعلية. |
 
 ## قيود ومخاطر مفتوحة
 
