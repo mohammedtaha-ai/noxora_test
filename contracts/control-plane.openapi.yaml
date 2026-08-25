@@ -1,0 +1,116 @@
+openapi: 3.1.0
+info:
+  title: Nexora Control Plane API
+  version: 1.0.0
+  description: >-
+    Versioned REST API for Control Plane metadata and simulation-start intents.
+    X-Tenant-Id selects a tenant context but never authorizes it; authorization is derived from the authenticated membership.
+servers:
+  - url: http://localhost:8000/api/v1
+security:
+  - bearerAuth: []
+paths:
+  /me:
+    get:
+      summary: Get the authenticated principal and active memberships.
+      responses:
+        '200': { $ref: '#/components/responses/DataResponse' }
+        '401': { $ref: '#/components/responses/ErrorResponse' }
+  /tenants/current:
+    get:
+      summary: Resolve an active tenant membership after membership validation.
+      parameters: [ { $ref: '#/components/parameters/TenantId' } ]
+      responses:
+        '200': { $ref: '#/components/responses/DataResponse' }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /scenarios:
+    get:
+      summary: List tenant-owned scenario catalog metadata.
+      parameters: [ { $ref: '#/components/parameters/TenantId' } ]
+      responses:
+        '200': { $ref: '#/components/responses/DataResponse' }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /scenarios/{scenarioId}:
+    get:
+      summary: Get tenant-owned scenario catalog metadata only.
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: scenarioId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/DataResponse' }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
+  /assignments:
+    get:
+      summary: List assignments available in the selected authorized tenant context.
+      parameters: [ { $ref: '#/components/parameters/TenantId' } ]
+      responses:
+        '200': { $ref: '#/components/responses/DataResponse' }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+  /simulation-start-requests:
+    post:
+      summary: Request an idempotent simulation start intent; does not call Go directly.
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [assignment_id, request_id]
+              properties:
+                assignment_id: { type: string, format: uuid }
+                request_id: { type: string, format: uuid }
+      responses:
+        '202': { $ref: '#/components/responses/DataResponse' }
+        '200': { $ref: '#/components/responses/DataResponse' }
+        '403': { $ref: '#/components/responses/ErrorResponse' }
+        '409': { $ref: '#/components/responses/ErrorResponse' }
+        '422': { $ref: '#/components/responses/ErrorResponse' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: SanctumToken
+  parameters:
+    TenantId:
+      name: X-Tenant-Id
+      in: header
+      required: true
+      description: Tenant context selection; it is checked against authenticated membership and is not an authorization credential.
+      schema: { type: string, format: uuid }
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      schema: { type: string, format: uuid }
+  responses:
+    DataResponse:
+      description: Successful JSON response.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties: { data: {} }
+    ErrorResponse:
+      description: Stable machine-readable error.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message, request_id]
+                properties:
+                  code: { type: string }
+                  message: { type: string }
+                  request_id: { type: string, format: uuid }

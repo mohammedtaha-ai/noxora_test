@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nexora_control_plane
+      POSTGRES_USER: nexora_control
+      POSTGRES_PASSWORD: ${CONTROL_PLANE_DB_PASSWORD:?set in local .env before docker compose up}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexora_control -d nexora_control_plane"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - control_plane_postgres:/var/lib/postgresql/data
+
+  control-plane:
+    build:
+      context: .
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: nexora_control_plane
+      DB_USERNAME: nexora_control
+      DB_PASSWORD: ${CONTROL_PLANE_DB_PASSWORD:?set in local .env before docker compose up}
+      DB_SEARCH_PATH: control_plane,public
+    command: >
+      sh -c "composer install --no-interaction && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  control_plane_postgres:
