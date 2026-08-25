@@ -2,12 +2,16 @@ name: Control Plane Verification
 
 on:
   push:
-    branches: [manus/control-plane-foundation]
+    paths:
+      - 'apps/control-plane/**'
+      - 'contracts/**'
+      - 'schemas/**'
+      - '.github/workflows/control-plane.yml'
   pull_request:
     paths:
       - 'apps/control-plane/**'
-      - 'contracts/control-plane.openapi.yaml'
-      - 'schemas/platform-event-envelope.schema.json'
+      - 'contracts/**'
+      - 'schemas/**'
       - '.github/workflows/control-plane.yml'
 
 jobs:
@@ -65,7 +69,9 @@ jobs:
           ./vendor/bin/pint --test
       - name: PostgreSQL integration and contract tests
         run: ./vendor/bin/phpunit
-      - name: Portable schema syntax
-        run: python3 -m json.tool ../../schemas/platform-event-envelope.schema.json > /dev/null
+      - name: Canonical schema syntax
+        run: |
+          python3 -m json.tool ../../schemas/platform-event-envelope.schema.json > /dev/null
+          find ../../contracts/events -name '*.schema.json' -print0 | xargs -0 -r -n1 python3 -m json.tool > /dev/null
       - name: Dependency audit
         run: composer audit
