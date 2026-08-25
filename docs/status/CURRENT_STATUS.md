@@ -35,7 +35,7 @@
 | Platform session registry | **VERIFIED** | lifecycle محدد: `REQUESTED`, `PENDING_WORKER`, `FAILED`, `CANCELLED`؛ لا `RUNNING` بلا worker. |
 | Platform lease/fencing | **VERIFIED** | PostgreSQL lock/expiry/reclaim/token/generation؛ stale owner لا يجدد ولا يكتب route. |
 | Bounded local ingress | **VERIFIED** | loopback-only config، timeouts/body limits، health/readiness، sanitized errors؛ لا public auth. |
-| Go CI and vulnerability scan | **VERIFIED محليًا / workflow مضاف** | `gofmt`, PostgreSQL `-race`, `go vet`, `govulncheck`; workflow ينتظر run remote للـSHA النهائي. |
+| Go CI and vulnerability scan | **VERIFIED محليًا وGitHub Actions** | `gofmt`, PostgreSQL `-race`, `go vet`, `govulncheck`; Platform run `32911634019` وControl Plane run `32911633890` اجتازا SHA `d78af2d`. |
 
 ## VERIFIED COMMANDS
 

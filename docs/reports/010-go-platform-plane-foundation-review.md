@@ -64,6 +64,7 @@ Laravel لا يكتب `platform.*`، وGo لا يقرأ أو يكتب `control_p
 
 | الأمر/الدليل | النتيجة |
 |---|---|
+| GitHub Actions على SHA `d78af2d` | **PASS**: Control Plane Verification run `32911633890` وPlatform Plane run `32911634019`؛ الأخير أكمل في 2m04s مع PostgreSQL/race/vet/govulncheck. |
 | `composer validate --strict` | PASS. |
 | `composer audit` | PASS؛ لا security advisories. |
 | `./vendor/bin/pint --test` | PASS على 64 ملفًا. |
