@@ -49,7 +49,12 @@ class SimulationStartTest extends TestCase
             'version_number' => 1,
             'status' => 'published',
             'title' => 'Scenario v1',
-            'metadata' => ['learning_mode' => true],
+            'metadata' => [
+                'learning_mode' => true,
+                'scenario_contract_version' => 'nexora.scenario.s0.v1',
+                'runtime_contract_version' => 'nexora.vpe.s0.v1',
+            ],
+            'artifact_id' => (string) Str::uuid7(),
             'artifact_hash' => str_repeat('a', 64),
             'artifact_content_type' => 'application/json',
             'artifact_size_bytes' => 64,
@@ -74,11 +79,15 @@ class SimulationStartTest extends TestCase
     public function test_authorized_start_writes_intent_outbox_and_audit_in_one_postgres_flow(): void
     {
         $world = $this->world();
-        Sanctum::actingAs($world['user']);
+        Sanctum::actingAs($world['user'], ['control-plane:simulation-start']);
         $requestId = (string) Str::uuid7();
+        $idempotencyKey = (string) Str::uuid7();
 
-        $response = $this->withHeaders(['X-Tenant-Id' => $world['tenant']->id, 'X-Request-Id' => $requestId])
-            ->postJson('/api/v1/simulation-start-requests', ['assignment_id' => $world['assignment']->id, 'request_id' => $requestId]);
+        $response = $this->withHeaders([
+            'X-Tenant-Id' => $world['tenant']->id,
+            'X-Request-Id' => $requestId,
+            'Idempotency-Key' => $idempotencyKey,
+        ])->postJson('/api/v1/simulation-start-requests', ['assignment_id' => $world['assignment']->id]);
 
         $response->assertStatus(202)->assertJsonPath('data.status', 'requested')->assertHeader('X-Request-Id', $requestId);
         $this->assertSame(1, SimulationStartIntent::query()->count());
@@ -89,15 +98,17 @@ class SimulationStartTest extends TestCase
         $this->assertSame($world['tenant']->id, $event->tenant_id);
         $this->assertArrayNotHasKey('password', $event->payload);
         $this->assertArrayNotHasKey('token', $event->payload);
+        $this->assertSame('nexora.vpe.s0.v1', $event->payload['execution_manifest']['runtime_contract_version']);
+        $this->assertSame($world['version']->artifact_hash, $event->payload['execution_manifest']['artifact']['sha256']);
     }
 
-    public function test_repeated_request_id_returns_same_start_intent_and_no_second_outbox_command(): void
+    public function test_repeated_idempotency_key_returns_same_start_intent_and_no_second_outbox_command(): void
     {
         $world = $this->world();
         $service = app(RequestSimulationStart::class);
-        $requestId = (string) Str::uuid7();
-        $first = $service->handle($world['user'], $world['tenant']->id, $world['assignment']->id, $requestId, (string) Str::uuid7());
-        $second = $service->handle($world['user'], $world['tenant']->id, $world['assignment']->id, $requestId, (string) Str::uuid7());
+        $idempotencyKey = (string) Str::uuid7();
+        $first = $service->handle($world['user'], $world['tenant']->id, $world['assignment']->id, $idempotencyKey, (string) Str::uuid7(), (string) Str::uuid7());
+        $second = $service->handle($world['user'], $world['tenant']->id, $world['assignment']->id, $idempotencyKey, (string) Str::uuid7(), (string) Str::uuid7());
 
         $this->assertTrue($first['created']);
         $this->assertFalse($second['created']);
@@ -106,28 +117,28 @@ class SimulationStartTest extends TestCase
         $this->assertSame(1, OutboxEvent::query()->count());
     }
 
-    public function test_reused_request_id_with_different_assignment_is_rejected(): void
+    public function test_reused_idempotency_key_with_different_assignment_is_rejected(): void
     {
         $world = $this->world();
         $other = $this->world('learner', $world['user']);
         $service = app(RequestSimulationStart::class);
-        $requestId = (string) Str::uuid7();
-        $service->handle($world['user'], $world['tenant']->id, $world['assignment']->id, $requestId, (string) Str::uuid7());
+        $idempotencyKey = (string) Str::uuid7();
+        $service->handle($world['user'], $world['tenant']->id, $world['assignment']->id, $idempotencyKey, (string) Str::uuid7(), (string) Str::uuid7());
 
         $this->expectException(ControlPlaneException::class);
         $this->expectExceptionMessage('reused with a different simulation intent');
-        $service->handle($world['user'], $other['tenant']->id, $other['assignment']->id, $requestId, (string) Str::uuid7());
+        $service->handle($world['user'], $other['tenant']->id, $other['assignment']->id, $idempotencyKey, (string) Str::uuid7(), (string) Str::uuid7());
     }
 
     public function test_cross_tenant_selection_is_denied_even_when_client_supplies_tenant_id(): void
     {
         $world = $this->world();
         $other = $this->world();
-        Sanctum::actingAs($world['user']);
-        $requestId = (string) Str::uuid7();
+        Sanctum::actingAs($world['user'], ['control-plane:simulation-start']);
+        $idempotencyKey = (string) Str::uuid7();
 
-        $this->withHeaders(['X-Tenant-Id' => $other['tenant']->id])
-            ->postJson('/api/v1/simulation-start-requests', ['assignment_id' => $other['assignment']->id, 'request_id' => $requestId])
+        $this->withHeaders(['X-Tenant-Id' => $other['tenant']->id, 'Idempotency-Key' => $idempotencyKey])
+            ->postJson('/api/v1/simulation-start-requests', ['assignment_id' => $other['assignment']->id])
             ->assertStatus(403)->assertJsonPath('error.code', 'SIMULATION_START_FORBIDDEN');
     }
 
@@ -137,7 +148,7 @@ class SimulationStartTest extends TestCase
         $service = app(RequestSimulationStart::class);
 
         try {
-            $service->handle($world['user'], $world['tenant']->id, $world['assignment']->id, (string) Str::uuid7(), (string) Str::uuid7(), true);
+            $service->handle($world['user'], $world['tenant']->id, $world['assignment']->id, (string) Str::uuid7(), (string) Str::uuid7(), (string) Str::uuid7(), true);
             $this->fail('Expected forced outbox failure.');
         } catch (ControlPlaneException $exception) {
             $this->assertSame('OUTBOX_WRITE_FAILED', $exception->errorCode);
@@ -152,11 +163,48 @@ class SimulationStartTest extends TestCase
     {
         $world = $this->world();
         $world['assignment']->update(['available_until' => now()->subSecond()]);
-        Sanctum::actingAs($world['user']);
+        Sanctum::actingAs($world['user'], ['control-plane:simulation-start']);
 
-        $this->withHeaders(['X-Tenant-Id' => $world['tenant']->id])
-            ->postJson('/api/v1/simulation-start-requests', ['assignment_id' => $world['assignment']->id, 'request_id' => (string) Str::uuid7()])
+        $this->withHeaders(['X-Tenant-Id' => $world['tenant']->id, 'Idempotency-Key' => (string) Str::uuid7()])
+            ->postJson('/api/v1/simulation-start-requests', ['assignment_id' => $world['assignment']->id])
             ->assertStatus(422)->assertJsonPath('error.code', 'ASSIGNMENT_NOT_AVAILABLE');
         $this->assertSame(0, OutboxEvent::query()->count());
+    }
+
+    public function test_malformed_transport_or_idempotency_identifier_returns_structured_400_before_writes(): void
+    {
+        $world = $this->world();
+        Sanctum::actingAs($world['user'], ['control-plane:simulation-start']);
+
+        $this->withHeaders([
+            'X-Tenant-Id' => $world['tenant']->id,
+            'X-Request-Id' => 'not-a-uuid',
+            'Idempotency-Key' => (string) Str::uuid7(),
+        ])->postJson('/api/v1/simulation-start-requests', ['assignment_id' => $world['assignment']->id])
+            ->assertStatus(400)->assertJsonPath('error.code', 'MALFORMED_REQUEST_IDENTIFIER');
+
+        $this->withHeaders([
+            'X-Tenant-Id' => $world['tenant']->id,
+            'X-Request-Id' => (string) Str::uuid7(),
+            'Idempotency-Key' => 'not-a-uuid',
+        ])->postJson('/api/v1/simulation-start-requests', ['assignment_id' => $world['assignment']->id])
+            ->assertStatus(400)->assertJsonPath('error.code', 'MALFORMED_IDEMPOTENCY_KEY');
+
+        $this->assertSame(0, SimulationStartIntent::query()->count());
+        $this->assertSame(0, OutboxEvent::query()->count());
+    }
+
+    public function test_simulation_start_requires_explicit_sanctum_ability(): void
+    {
+        $world = $this->world();
+        Sanctum::actingAs($world['user'], ['control-plane:read']);
+
+        $this->withHeaders([
+            'X-Tenant-Id' => $world['tenant']->id,
+            'Idempotency-Key' => (string) Str::uuid7(),
+        ])->postJson('/api/v1/simulation-start-requests', ['assignment_id' => $world['assignment']->id])
+            ->assertStatus(403);
+
+        $this->assertSame(0, SimulationStartIntent::query()->count());
     }
 }

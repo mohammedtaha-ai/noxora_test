@@ -6,37 +6,101 @@ namespace Tests\Unit\ControlPlane;
 
 use App\Exceptions\ControlPlaneException;
 use App\Services\PortableEventEnvelope;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PortableEventContractTest extends TestCase
 {
-    public function test_laravel_event_shape_covers_canonical_schema_required_fields_and_rejects_secrets(): void
+    public function test_php_executes_generic_and_event_specific_json_schemas_for_a_valid_event(): void
     {
-        $schema = json_decode((string) file_get_contents(base_path('../../schemas/platform-event-envelope.schema.json')), true, flags: JSON_THROW_ON_ERROR);
-        $event = [
-            'event_id' => '018f73b4-8a2e-7c11-8123-0123456789ab',
+        $event = $this->validEvent();
+
+        PortableEventEnvelope::assertValid($event);
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_schema_rejects_malformed_uuid_datetime_and_unknown_event_type(): void
+    {
+        $malformedUuid = $this->validEvent();
+        $malformedUuid['event_id'] = 'not-a-uuid';
+        $this->assertMalformed($malformedUuid);
+
+        $malformedDatetime = $this->validEvent();
+        $malformedDatetime['occurred_at'] = 'not-a-datetime';
+        $this->assertMalformed($malformedDatetime);
+
+        $unknownType = $this->validEvent();
+        $unknownType['event_type'] = 'control.unknown.requested';
+        try {
+            PortableEventEnvelope::assertValid($unknownType);
+            $this->fail('Expected unknown event schema rejection.');
+        } catch (ControlPlaneException $exception) {
+            $this->assertSame('UNSUPPORTED_EVENT_SCHEMA', $exception->errorCode);
+        }
+    }
+
+    public function test_event_payload_schema_rejects_missing_fields_and_recursive_unknown_fields(): void
+    {
+        $missingCommand = $this->validEvent();
+        unset($missingCommand['payload']['command_id']);
+        $this->assertMalformed($missingCommand);
+
+        $extraPayloadProperty = $this->validEvent();
+        $extraPayloadProperty['payload']['token'] = 'must-not-pass';
+        $this->assertMalformed($extraPayloadProperty);
+
+        $nestedSecret = $this->validEvent();
+        $nestedSecret['payload']['execution_manifest']['artifact']['secret'] = 'must-not-pass';
+        $this->assertMalformed($nestedSecret);
+    }
+
+    /** @param array<string, mixed> $event */
+    private function assertMalformed(array $event): void
+    {
+        try {
+            PortableEventEnvelope::assertValid($event);
+            $this->fail('Expected JSON Schema rejection.');
+        } catch (ControlPlaneException $exception) {
+            $this->assertSame('MALFORMED_EVENT_PAYLOAD', $exception->errorCode);
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function validEvent(): array
+    {
+        return [
+            'event_id' => (string) Str::uuid7(),
             'event_type' => 'control.simulation_start.requested',
             'schema_version' => 1,
             'occurred_at' => '2026-08-25T00:00:00.000Z',
             'producer' => 'control-plane.laravel',
-            'tenant_id' => '018f73b4-8a2f-7c11-8123-0123456789ab',
+            'tenant_id' => (string) Str::uuid7(),
             'aggregate_type' => 'SimulationStartIntent',
-            'aggregate_id' => '018f73b4-8a30-7c11-8123-0123456789ab',
-            'routing_key' => '018f73b4-8a2f-7c11-8123-0123456789ab',
+            'aggregate_id' => (string) Str::uuid7(),
+            'routing_key' => (string) Str::uuid7(),
             'classification' => 'INTERNAL',
-            'payload' => ['assignment_id' => '018f73b4-8a31-7c11-8123-0123456789ab'],
-            'correlation_id' => '018f73b4-8a32-7c11-8123-0123456789ab',
-            'causation_id' => '018f73b4-8a33-7c11-8123-0123456789ab',
+            'payload' => [
+                'command_id' => (string) Str::uuid7(),
+                'assignment_id' => (string) Str::uuid7(),
+                'scenario_version_id' => (string) Str::uuid7(),
+                'requester_user_id' => (string) Str::uuid7(),
+                'execution_manifest' => [
+                    'manifest_version' => 1,
+                    'scenario_contract_version' => 'nexora.scenario.s0.v1',
+                    'runtime_contract_version' => 'nexora.vpe.s0.v1',
+                    'time_authority' => 'vpe-runtime-owned',
+                    'artifact' => [
+                        'artifact_id' => (string) Str::uuid7(),
+                        'sha256' => str_repeat('a', 64),
+                        'content_type' => 'application/json',
+                        'size_bytes' => 64,
+                        'classification' => 'INTERNAL',
+                        'storage_reference' => 'local://scenario/v1.json',
+                    ],
+                ],
+            ],
+            'correlation_id' => (string) Str::uuid7(),
+            'causation_id' => (string) Str::uuid7(),
         ];
-
-        foreach ($schema['required'] as $field) {
-            $this->assertArrayHasKey($field, $event);
-        }
-        PortableEventEnvelope::assertValid($event);
-
-        $event['payload']['token'] = 'must-not-pass';
-        $this->expectException(ControlPlaneException::class);
-        $this->expectExceptionObject(new ControlPlaneException('MALFORMED_EVENT_PAYLOAD', 'Portable event payload contains a forbidden field.'));
-        PortableEventEnvelope::assertValid($event);
     }
 }

@@ -13,6 +13,7 @@ use App\Services\RequestSimulationStart;
 use App\Services\TenantAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ControlPlaneController extends Controller
 {
@@ -21,6 +22,9 @@ class ControlPlaneController extends Controller
         $tenantId = (string) $request->header('X-Tenant-Id', '');
         if ($tenantId === '') {
             throw new ControlPlaneException('TENANT_CONTEXT_REQUIRED', 'A tenant selection is required.', 422);
+        }
+        if (! Str::isUuid($tenantId)) {
+            throw new ControlPlaneException('MALFORMED_TENANT_IDENTIFIER', 'X-Tenant-Id must be a UUID.', 400);
         }
 
         return $tenantId;
@@ -78,14 +82,21 @@ class ControlPlaneController extends Controller
     {
         $data = $request->validate([
             'assignment_id' => ['required', 'uuid'],
-            'request_id' => ['required', 'uuid'],
         ]);
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
+        if ($idempotencyKey === '') {
+            throw new ControlPlaneException('IDEMPOTENCY_KEY_REQUIRED', 'Idempotency-Key is required for simulation start.', 422);
+        }
+        if (! Str::isUuid($idempotencyKey)) {
+            throw new ControlPlaneException('MALFORMED_IDEMPOTENCY_KEY', 'Idempotency-Key must be a UUID.', 400);
+        }
         $tenantId = $this->tenantId($request);
         $result = $service->handle(
             $request->user(),
             $tenantId,
             $data['assignment_id'],
-            $data['request_id'],
+            $idempotencyKey,
+            (string) $request->attributes->get('request_id'),
             (string) $request->attributes->get('correlation_id'),
         );
         $intent = $result['intent'];

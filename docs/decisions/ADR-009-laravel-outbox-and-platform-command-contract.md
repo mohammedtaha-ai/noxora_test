@@ -13,11 +13,11 @@ Laravel atomically writes a `simulation_start_intents` business row, a `control.
 
 A narrow local relay claims unclaimed rows using row locking, invokes an injected publisher, marks success, or clears the claim after recording an error. Delivery is **at least once**; consumers must deduplicate by `event_id` or `command_id`. No SQS, Kafka, Redis, or production Go relay is deployed in this batch.
 
-The request ID is unique per requester and is fingerprinted with assignment/scenario version. The same request repeats the same start intent and command identity; a changed intent with the same request ID is rejected.
+`Idempotency-Key` is the UUID business retry identity, unique per requester and fingerprinted with assignment/scenario version. Repeating the same key returns the same start intent and command identity; reuse with a changed intent is rejected. `X-Request-Id` and `X-Correlation-Id` are separate UUID transport tracing identifiers and are retained for audit, not deduplication.
 
 ## Consequences
 
-A future Go consumer can be added without changing the business transaction. Exactly-once end-to-end delivery is not claimed. Event payloads exclude tokens, passwords, secrets, raw profiles, runtime physiology, and artifact bytes.
+A future Go consumer can be added without changing the business transaction. Exactly-once end-to-end delivery is not claimed. Event payloads exclude tokens, passwords, secrets, raw profiles, runtime physiology, and artifact bytes. The immutable execution reference for `control.simulation_start.requested` is specified by [ADR-010](ADR-010-simulation-start-execution-manifest.md).
 
 ## References
 

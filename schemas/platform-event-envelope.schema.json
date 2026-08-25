@@ -44,8 +44,7 @@
     },
     "tenant_id": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 128,
+      "format": "uuid",
       "description": "Ownership and audit context, never an authorization credential."
     },
     "aggregate_type": {
@@ -56,8 +55,7 @@
     },
     "aggregate_id": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 128
+      "format": "uuid"
     },
     "routing_key": {
       "type": "string",
@@ -75,13 +73,11 @@
     },
     "correlation_id": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 128
+      "format": "uuid"
     },
     "causation_id": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 128
+      "format": "uuid"
     },
     "trace_id": {
       "type": "string",

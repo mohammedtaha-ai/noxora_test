@@ -52,7 +52,7 @@ class FailureModesTest extends TestCase
         $assignment = Assignment::query()->create(['tenant_id' => $tenant->id, 'course_id' => $course->id, 'cohort_id' => $cohort->id, 'scenario_version_id' => $version->id, 'available_from' => now()->subMinute(), 'available_until' => now()->addHour(), 'status' => 'active', 'created_by' => $user->id]);
 
         try {
-            app(RequestSimulationStart::class)->handle($user, $tenant->id, $assignment->id, (string) Str::uuid7(), (string) Str::uuid7());
+            app(RequestSimulationStart::class)->handle($user, $tenant->id, $assignment->id, (string) Str::uuid7(), (string) Str::uuid7(), (string) Str::uuid7());
             $this->fail('Expected invalid scenario version failure.');
         } catch (ControlPlaneException $exception) {
             $this->assertSame('INVALID_SCENARIO_VERSION', $exception->errorCode);

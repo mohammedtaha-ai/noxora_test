@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexora.example/contracts/events/control.simulation_start.requested/v1/payload",
+  "title": "control.simulation_start.requested payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "command_id",
+    "assignment_id",
+    "scenario_version_id",
+    "requester_user_id",
+    "execution_manifest"
+  ],
+  "properties": {
+    "command_id": {"type": "string", "format": "uuid"},
+    "assignment_id": {"type": "string", "format": "uuid"},
+    "scenario_version_id": {"type": "string", "format": "uuid"},
+    "requester_user_id": {"type": "string", "format": "uuid"},
+    "execution_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manifest_version",
+        "scenario_contract_version",
+        "runtime_contract_version",
+        "time_authority",
+        "artifact"
+      ],
+      "properties": {
+        "manifest_version": {"type": "integer", "const": 1},
+        "scenario_contract_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9._-]*$"
+        },
+        "runtime_contract_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9._-]*$"
+        },
+        "time_authority": {"type": "string", "const": "vpe-runtime-owned"},
+        "artifact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "artifact_id",
+            "sha256",
+            "content_type",
+            "size_bytes",
+            "classification",
+            "storage_reference"
+          ],
+          "properties": {
+            "artifact_id": {"type": "string", "format": "uuid"},
+            "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "content_type": {"type": "string", "minLength": 1, "maxLength": 160},
+            "size_bytes": {"type": "integer", "minimum": 0},
+            "classification": {"type": "string", "enum": ["PUBLIC", "INTERNAL", "RESTRICTED"]},
+            "storage_reference": {"type": "string", "minLength": 1, "maxLength": 512}
+          }
+        }
+      }
+    }
+  }
+}
