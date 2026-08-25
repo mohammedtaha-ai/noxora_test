@@ -26,7 +26,21 @@ class ScenarioVersionImmutabilityTest extends TestCase
         $user = User::query()->create(['name' => 'Author', 'email' => Str::uuid7().'@example.test', 'password' => 'test-password']);
         $tenant = Tenant::query()->create(['name' => 'Tenant', 'slug' => 'tenant-'.substr((string) Str::uuid7(), 0, 8), 'status' => 'active']);
         $scenario = Scenario::query()->create(['tenant_id' => $tenant->id, 'title' => 'Scenario', 'status' => 'draft', 'created_by' => $user->id]);
-        $version = ScenarioVersion::query()->create(['tenant_id' => $tenant->id, 'scenario_id' => $scenario->id, 'version_number' => 1, 'status' => 'published', 'title' => 'Published', 'metadata' => [], 'created_by' => $user->id, 'published_at' => now()]);
+        $version = ScenarioVersion::query()->create([
+            'tenant_id' => $tenant->id,
+            'scenario_id' => $scenario->id,
+            'version_number' => 1,
+            'status' => 'published',
+            'title' => 'Published',
+            'metadata' => ['scenario_contract_version' => 'nexora.scenario.s0.v1', 'runtime_contract_version' => 'nexora.vpe.s0.v1'],
+            'artifact_id' => (string) Str::uuid7(),
+            'artifact_hash' => str_repeat('a', 64),
+            'artifact_content_type' => 'application/json',
+            'artifact_size_bytes' => 1,
+            'artifact_storage_reference' => 'local://scenario/immutable.json',
+            'created_by' => $user->id,
+            'published_at' => now(),
+        ]);
 
         $this->expectException(QueryException::class);
         $version->update(['title' => 'Mutated in place']);
