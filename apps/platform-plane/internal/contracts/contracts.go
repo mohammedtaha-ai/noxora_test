@@ -202,6 +202,11 @@ func integer(value any) (int, bool) {
 		return number, true
 	case int64:
 		return int(number), true
+	case json.Number:
+		parsed, err := number.Int64()
+		if err == nil {
+			return int(parsed), true
+		}
 	case float64:
 		if number == float64(int(number)) {
 			return int(number), true

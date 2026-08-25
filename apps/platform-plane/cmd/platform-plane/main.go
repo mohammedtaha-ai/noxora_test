@@ -106,6 +106,9 @@ func migrate(cfg config.Config, root string) error {
 	if err := db.PingContext(context); err != nil {
 		return fmt.Errorf("verify migration database: %w", err)
 	}
+	if _, err := db.ExecContext(context, "CREATE SCHEMA IF NOT EXISTS platform"); err != nil {
+		return fmt.Errorf("create platform schema for migration tracking: %w", err)
+	}
 	if err := goose.SetDialect("postgres"); err != nil {
 		return fmt.Errorf("set goose dialect: %w", err)
 	}

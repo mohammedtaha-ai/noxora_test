@@ -1,0 +1,63 @@
+name: Platform Plane
+
+on:
+  push:
+    paths:
+      - 'apps/platform-plane/**'
+      - 'schemas/platform-event-envelope.schema.json'
+      - 'contracts/events/control.simulation_start.requested.v1.schema.json'
+      - 'contracts/fixtures/**'
+      - '.github/workflows/platform-plane.yml'
+  pull_request:
+    paths:
+      - 'apps/platform-plane/**'
+      - 'schemas/platform-event-envelope.schema.json'
+      - 'contracts/events/control.simulation_start.requested.v1.schema.json'
+      - 'contracts/fixtures/**'
+      - '.github/workflows/platform-plane.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Go Platform Plane
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: nexora_platform
+          POSTGRES_PASSWORD: nexora_platform_ci_only
+          POSTGRES_DB: nexora_platform_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nexora_platform -d nexora_platform_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: apps/platform-plane
+    env:
+      PLATFORM_TEST_DATABASE_URL: postgres://nexora_platform:nexora_platform_ci_only@127.0.0.1:5432/nexora_platform_test?sslmode=disable
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.0'
+          check-latest: true
+      - name: Download verified module graph
+        run: go mod download
+      - name: Format check
+        run: test -z "$(gofmt -l ./cmd ./internal)"
+      - name: Run tests with race detector against PostgreSQL
+        run: go test -race -p 1 ./...
+      - name: Run Go vet
+        run: go vet ./...
+      - name: Run dependency vulnerability scan
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...

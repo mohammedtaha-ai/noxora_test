@@ -1,0 +1,32 @@
+{
+  "event_id": "018f5f54-8c8e-7000-8000-000000000001",
+  "event_type": "control.simulation_start.requested",
+  "schema_version": 1,
+  "occurred_at": "2026-08-26T12:00:00.000Z",
+  "producer": "control-plane.laravel",
+  "tenant_id": "018f5f54-8c8e-7000-8000-000000000002",
+  "aggregate_type": "SimulationStartIntent",
+  "aggregate_id": "018f5f54-8c8e-7000-8000-000000000003",
+  "routing_key": "018f5f54-8c8e-7000-8000-000000000004",
+  "classification": "INTERNAL",
+  "payload": {
+    "command_id": "018f5f54-8c8e-7000-8000-000000000005",
+    "assignment_id": "018f5f54-8c8e-7000-8000-000000000006",
+    "scenario_version_id": "018f5f54-8c8e-7000-8000-000000000007",
+    "requester_user_id": "018f5f54-8c8e-7000-8000-000000000008",
+    "execution_manifest": {
+      "manifest_version": 1,
+      "scenario_contract_version": "nexora.scenario.s0.v1",
+      "runtime_contract_version": "nexora.vpe.s0.v1",
+      "time_authority": "vpe-runtime-owned",
+      "artifact": {
+        "artifact_id": "018f5f54-8c8e-7000-8000-000000000009",
+        "sha256": "not-a-sha256",
+        "content_type": "application/json",
+        "size_bytes": 64,
+        "classification": "INTERNAL",
+        "storage_reference": "local://scenario/v1.json"
+      }
+    }
+  }
+}

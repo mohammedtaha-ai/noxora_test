@@ -57,7 +57,7 @@ func (s *Service) Accept(ctx context.Context, rawEvent []byte) (session.Allocati
 
 	s.diagnostics.Info(ctx, "platform command allocated", observability.Fields{
 		EventID: event.EventID.String(), CommandID: event.CommandID.String(), TenantID: event.TenantID.String(),
-		SessionID: result.Session.ID.String(), StateTransition: string(session.StateRequested) + "->" + string(session.StatePendingWorker),
+		SessionID: result.Session.ID.String(), StateTransition: "ALLOCATED:" + string(result.Session.State),
 		DurationMS: time.Since(started).Milliseconds(),
 	})
 	return result, nil

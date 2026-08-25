@@ -19,6 +19,20 @@ class PortableEventContractTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    public function test_laravel_validates_shared_platform_contract_fixtures(): void
+    {
+        PortableEventEnvelope::assertValid($this->fixture('simulation_start_requested_v1.valid.json'));
+        $this->addToAssertionCount(1);
+
+        foreach ([
+            'simulation_start_requested_v1.invalid_extra_property.json',
+            'simulation_start_requested_v1.invalid_uuid.json',
+            'simulation_start_requested_v1.invalid_manifest.json',
+        ] as $fixture) {
+            $this->assertMalformed($this->fixture($fixture));
+        }
+    }
+
     public function test_schema_rejects_malformed_uuid_datetime_and_unknown_event_type(): void
     {
         $malformedUuid = $this->validEvent();
@@ -63,6 +77,17 @@ class PortableEventContractTest extends TestCase
         } catch (ControlPlaneException $exception) {
             $this->assertSame('MALFORMED_EVENT_PAYLOAD', $exception->errorCode);
         }
+    }
+
+    /** @return array<string, mixed> */
+    private function fixture(string $filename): array
+    {
+        $contents = file_get_contents(base_path('../../contracts/fixtures/'.$filename));
+        self::assertIsString($contents);
+        $decoded = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+        self::assertIsArray($decoded);
+
+        return $decoded;
     }
 
     /** @return array<string, mixed> */

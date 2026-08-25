@@ -219,7 +219,7 @@ FROM platform.session_leases WHERE session_id = $1 FOR UPDATE`, sessionID).Scan(
 	}
 
 	nextGeneration := currentGeneration + 1
-	if _, err := tx.Exec(ctx, `UPDATE platform.sessions SET generation = $2, updated_at = now() WHERE id = $1`, sessionID, nextGeneration); err != nil {
+	if _, err := tx.Exec(ctx, `UPDATE platform.sessions SET generation = $2, future_worker_route = NULL, future_worker_route_generation = NULL, updated_at = now() WHERE id = $1`, sessionID, nextGeneration); err != nil {
 		return session.LeaseClaimResult{}, fmt.Errorf("advance session generation: %w", err)
 	}
 	lease := session.Lease{
