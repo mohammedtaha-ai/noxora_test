@@ -9,6 +9,8 @@ use Tests\TestCase;
 
 class RlsSpikeTest extends TestCase
 {
+    private const SPIKE_ROLE = 'nexora_rls_spike';
+
     public function test_forced_rls_uses_transaction_tenant_context_and_denies_without_context(): void
     {
         DB::unprepared(<<<'SQL'
@@ -22,24 +24,39 @@ ALTER TABLE control_plane.rls_spike_records FORCE ROW LEVEL SECURITY;
 CREATE POLICY rls_spike_tenant_policy ON control_plane.rls_spike_records
  USING (tenant_id::text = current_setting('app.tenant_id', true))
  WITH CHECK (tenant_id::text = current_setting('app.tenant_id', true));
+GRANT USAGE ON SCHEMA control_plane TO nexora_rls_spike;
+GRANT SELECT ON control_plane.rls_spike_records TO nexora_rls_spike;
 SQL);
 
-        $withoutContext = DB::select('SELECT value FROM control_plane.rls_spike_records ORDER BY value');
-        $this->assertSame([], $withoutContext);
+        try {
+            $withoutContext = $this->withSpikeRole(fn (): array => DB::select('SELECT value FROM control_plane.rls_spike_records ORDER BY value'));
+            $this->assertSame([], $withoutContext);
 
-        $tenantA = DB::transaction(function (): array {
-            DB::statement("SET LOCAL app.tenant_id = '11111111-1111-7111-8111-111111111111'");
+            $tenantA = $this->withSpikeRole(function (): array {
+                DB::statement("SET LOCAL app.tenant_id = '11111111-1111-7111-8111-111111111111'");
 
-            return DB::select('SELECT value FROM control_plane.rls_spike_records ORDER BY value');
+                return DB::select('SELECT value FROM control_plane.rls_spike_records ORDER BY value');
+            });
+            $tenantB = $this->withSpikeRole(function (): array {
+                DB::statement("SET LOCAL app.tenant_id = '22222222-2222-7222-8222-222222222222'");
+
+                return DB::select('SELECT value FROM control_plane.rls_spike_records ORDER BY value');
+            });
+
+            $this->assertSame('tenant-a', $tenantA[0]->value);
+            $this->assertSame('tenant-b', $tenantB[0]->value);
+        } finally {
+            DB::unprepared('DROP TABLE IF EXISTS control_plane.rls_spike_records;');
+        }
+    }
+
+    /** @param callable(): array<int, object> $operation */
+    private function withSpikeRole(callable $operation): array
+    {
+        return DB::transaction(function () use ($operation): array {
+            DB::statement('SET LOCAL ROLE '.self::SPIKE_ROLE);
+
+            return $operation();
         });
-        $tenantB = DB::transaction(function (): array {
-            DB::statement("SET LOCAL app.tenant_id = '22222222-2222-7222-8222-222222222222'");
-
-            return DB::select('SELECT value FROM control_plane.rls_spike_records ORDER BY value');
-        });
-
-        $this->assertSame('tenant-a', $tenantA[0]->value);
-        $this->assertSame('tenant-b', $tenantB[0]->value);
-        DB::statement('DROP TABLE control_plane.rls_spike_records');
     }
 }

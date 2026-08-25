@@ -62,6 +62,7 @@ jobs:
           MAIL_MAILER=array
           EOF
           PGPASSWORD=${{ github.run_id }} psql -h 127.0.0.1 -U nexora_control -d nexora_control_plane_test -c 'CREATE SCHEMA IF NOT EXISTS control_plane;'
+          PGPASSWORD=${{ github.run_id }} psql -h 127.0.0.1 -U nexora_control -d nexora_control_plane_test -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'nexora_rls_spike') THEN CREATE ROLE nexora_rls_spike NOLOGIN NOSUPERUSER NOBYPASSRLS; END IF; END \$\$; GRANT nexora_rls_spike TO nexora_control;"
           php artisan migrate --env=testing --force
       - name: PHP syntax and style
         run: |
