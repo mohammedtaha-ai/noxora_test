@@ -1,0 +1,23 @@
+{
+  "purpose": "local diagnostic; not a production SLA",
+  "path": "authenticated HTTP simulation-start request -> authorization -> assignment lookup -> PostgreSQL transaction -> outbox insert -> response",
+  "requests": 40,
+  "concurrency": 8,
+  "elapsed_seconds": 1.473,
+  "rps": 27.152,
+  "latency_ms": {
+    "p50": 210.199,
+    "p95": 578.047,
+    "p99": 633.413,
+    "min": 204.7,
+    "max": 633.413
+  },
+  "status_counts": {
+    "202": 40
+  },
+  "errors": 0,
+  "database_connections": {
+    "before": 1,
+    "after": 1
+  }
+}
