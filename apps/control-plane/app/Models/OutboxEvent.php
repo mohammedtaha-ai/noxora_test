@@ -18,6 +18,7 @@ class OutboxEvent extends ControlPlaneModel
             'payload' => 'array',
             'occurred_at' => 'datetime',
             'claimed_at' => 'datetime',
+            'claim_expires_at' => 'datetime',
             'published_at' => 'datetime',
         ];
     }

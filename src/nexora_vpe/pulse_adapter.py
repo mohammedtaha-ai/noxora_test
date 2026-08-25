@@ -55,6 +55,7 @@ class PulseAdapter(PhysiologyAdapter):
     """
 
     _ADAPTER_VERSION = "pulse-process-adapter/1.0"
+    _SHUTDOWN_TIMEOUT_S = 2.0
 
     def __init__(self, config: PulseAdapterConfig) -> None:
         config.validate()
@@ -222,19 +223,32 @@ class PulseAdapter(PhysiologyAdapter):
                 if process.poll() is None and process.stdin is not None:
                     process.stdin.write("QUIT\n")
                     process.stdin.flush()
-                    select.select([process.stdout], [], [], min(2.0, self._config.request_timeout_s))
-                    if process.stdout is not None:
-                        process.stdout.readline()
+                    stdout = process.stdout
+                    if stdout is not None:
+                        ready, _, _ = select.select(
+                            [stdout], [], [], min(self._SHUTDOWN_TIMEOUT_S, self._config.request_timeout_s)
+                        )
+                        if ready:
+                            stdout.readline()
             except (BrokenPipeError, OSError):
                 pass
             finally:
                 if process.poll() is None:
-                    process.terminate()
                     try:
-                        process.wait(timeout=2.0)
+                        process.terminate()
+                    except OSError:
+                        pass
+                    try:
+                        process.wait(timeout=self._SHUTDOWN_TIMEOUT_S)
                     except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait(timeout=2.0)
+                        try:
+                            process.kill()
+                        except OSError:
+                            pass
+                        try:
+                            process.wait(timeout=self._SHUTDOWN_TIMEOUT_S)
+                        except subprocess.TimeoutExpired:
+                            pass
                 for stream in (process.stdin, process.stdout, process.stderr):
                     if stream is not None:
                         try:
