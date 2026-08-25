@@ -29,6 +29,7 @@ class VpeRuntime:
     _event_counter: int = 0
     _snapshot_counter: int = 0
     _submitted_counter: int = 0
+    _simulation_time_s: float = 0.0
     _requests: dict[str, Command] = field(default_factory=dict)
     _request_outcomes: dict[str, tuple[Event, ...]] = field(default_factory=dict)
 
@@ -37,12 +38,15 @@ class VpeRuntime:
         if self.state != RuntimeState.PAUSED_BY_SCENARIO:
             raise RuntimeError("Runtime may only start from PAUSED_BY_SCENARIO")
         self.adapter.bootstrap(self.scenario)
+        # Runtime-owned cache: client-facing readers must never query Pulse.
+        self._simulation_time_s = self.adapter.simulation_time_s
         self.state = RuntimeState.RUNNING
         self._publish_snapshot("scenario_started")
 
     @property
     def simulation_time_s(self) -> float:
-        return self.adapter.simulation_time_s
+        """Return the latest runtime-committed time without adapter I/O."""
+        return self._simulation_time_s
 
     def submit(
         self,
@@ -220,6 +224,7 @@ class VpeRuntime:
             if not isinstance(duration_s, (int, float)) or duration_s <= 0:
                 raise ValueError("advance_time requires a positive duration_s")
             self.adapter.advance(float(duration_s))
+            self._simulation_time_s += float(duration_s)
             self._emit(
                 EventType.CLOCK_ADVANCED,
                 actor=command.actor,
@@ -308,7 +313,7 @@ class VpeRuntime:
             self._checkpoints[checkpoint_id] = CheckpointArtifact(
                 checkpoint_id=checkpoint_id,
                 scenario_id=self.scenario.scenario_id,
-                simulation_time_s=self.adapter.simulation_time_s,
+                simulation_time_s=self._simulation_time_s,
                 engine_version=self.adapter.engine_version,
                 engine_state=engine_state,
             )
@@ -325,7 +330,9 @@ class VpeRuntime:
             checkpoint_id = command.payload.get("checkpoint_id")
             if checkpoint_id not in self._checkpoints:
                 raise ValueError("Unknown checkpoint identifier")
-            self.adapter.restore_state(self._checkpoints[checkpoint_id].engine_state)
+            checkpoint = self._checkpoints[checkpoint_id]
+            self.adapter.restore_state(checkpoint.engine_state)
+            self._simulation_time_s = checkpoint.simulation_time_s
             self._emit(
                 EventType.CHECKPOINT_RESTORED,
                 actor=command.actor,
@@ -343,7 +350,7 @@ class VpeRuntime:
             Event(
                 event_id=f"evt-{self._event_counter:06d}",
                 scenario_id=self.scenario.scenario_id,
-                simulation_time_s=self.adapter.simulation_time_s,
+                simulation_time_s=self._simulation_time_s,
                 event_type=event_type,
                 actor=actor,
                 payload=dict(payload),
@@ -356,7 +363,7 @@ class VpeRuntime:
         snapshot = Snapshot(
             snapshot_id=f"snp-{self._snapshot_counter:06d}",
             scenario_id=self.scenario.scenario_id,
-            simulation_time_s=self.adapter.simulation_time_s,
+            simulation_time_s=self._simulation_time_s,
             engine_version=self.adapter.engine_version,
             telemetry=self.adapter.telemetry(self.scenario.telemetry_keys),
             reason=reason,

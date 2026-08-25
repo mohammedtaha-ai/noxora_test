@@ -31,6 +31,24 @@ class FailingAdvanceAdapter(DeterministicPhysiologyAdapter):
         raise RuntimeError("synthetic engine failure")
 
 
+class AmbiguousInterventionAdapter(DeterministicPhysiologyAdapter):
+    """Simulate a side effect that may have reached the engine before response loss."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.apply_calls = 0
+        self.advance_calls = 0
+
+    def apply_intervention(self, payload: dict[str, object]) -> None:
+        self.apply_calls += 1
+        super().apply_intervention(payload)
+        raise RuntimeError("synthetic response loss after intervention side effect")
+
+    def advance(self, duration_s: float) -> None:
+        self.advance_calls += 1
+        super().advance(duration_s)
+
+
 class VpePacedHostTests(unittest.TestCase):
     def _runtime_and_facade(self, adapter: DeterministicPhysiologyAdapter | None = None) -> tuple[VpeRuntime, VpeClientFacade]:
         runtime = VpeRuntime(
@@ -82,6 +100,35 @@ class VpePacedHostTests(unittest.TestCase):
         self.assertEqual(0.5, runtime.simulation_time_s)
         self.assertEqual(0.25, first.advanced_simulation_s)
         self.assertEqual(0.25, second.advanced_simulation_s)
+
+    def test_ambiguous_intervention_pauses_before_host_clock_advance(self) -> None:
+        adapter = AmbiguousInterventionAdapter()
+        runtime, facade = self._runtime_and_facade(adapter)
+        host = VpePacedHost(runtime, facade, tick_simulation_s=0.25, sleep=lambda _: None)
+        accepted = facade.submit(
+            CommandRequest(
+                kind="apply_intervention",
+                payload={"intervention_id": "crystalloid_saline"},
+                request_id="ambiguous-intervention-001",
+            )
+        )
+        self.assertEqual(ClientCommandStatus.PENDING, facade.query_command_outcome(accepted.request_id).status)
+
+        result = host.tick_once()
+
+        outcome = facade.query_command_outcome("ambiguous-intervention-001")
+        self.assertEqual(ClientCommandStatus.AMBIGUOUS, outcome.status)
+        self.assertEqual(RuntimeState.PAUSED_BY_SYSTEM, runtime.state)
+        self.assertEqual(RuntimeState.PAUSED_BY_SYSTEM, result.state)
+        self.assertEqual(0.0, result.advanced_simulation_s)
+        self.assertEqual(0.0, runtime.simulation_time_s)
+        self.assertEqual(1, adapter.apply_calls)
+        self.assertEqual(0, adapter.advance_calls)
+
+        repeated = host.tick_once()
+        self.assertEqual(0.0, repeated.advanced_simulation_s)
+        self.assertEqual(1, adapter.apply_calls)
+        self.assertEqual(0, adapter.advance_calls)
 
     def test_host_failure_pauses_system_without_advancing_time(self) -> None:
         runtime, facade = self._runtime_and_facade(FailingAdvanceAdapter())

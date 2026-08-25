@@ -157,6 +157,10 @@ class VpeClientFacade:
                 error=self._safe_error(exc, ambiguous=True),
             )
             self._outcomes[request_id] = outcome
+            # A side effect may already have reached Pulse. Freeze clinical time
+            # until an explicit reconciliation/recovery decision is made.
+            if self.runtime.state.value == "RUNNING":
+                self.runtime.pause_by_system()
             return (outcome,)
         outcomes: list[CommandOutcome] = []
         for request_id in tuple(self._command_ids):

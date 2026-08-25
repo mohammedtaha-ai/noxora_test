@@ -65,6 +65,19 @@ class VpePacedHost:
         started = self.monotonic()
         try:
             self.facade.process_pending()
+            # An ambiguous learner side effect freezes clinical time. Do not
+            # enqueue a host tick after the facade has paused the runtime.
+            if self.runtime.state != RuntimeState.RUNNING:
+                elapsed = self.monotonic() - started
+                return TickResult(
+                    tick_index=self._tick_index,
+                    requested_tick_s=self.tick_simulation_s,
+                    advanced_simulation_s=0.0,
+                    wall_elapsed_s=elapsed,
+                    slept_s=0.0,
+                    overrun_s=max(0.0, elapsed - self.tick_simulation_s),
+                    state=self.runtime.state,
+                )
             # The host, not a learner request, owns every ADVANCE_TIME command.
             self.runtime.submit(
                 CommandKind.ADVANCE_TIME,

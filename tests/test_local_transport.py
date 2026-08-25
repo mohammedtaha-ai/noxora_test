@@ -10,11 +10,36 @@ from nexora_vpe.local_transport import LocalFacadeHttpServer
 from nexora_vpe.scenario import splenic_hemorrhage_learning_scenario
 
 
+class CountingAdapter(DeterministicPhysiologyAdapter):
+    """Counts mutable physiology adapter entry points for client-read regressions."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls: list[str] = []
+
+    def bootstrap(self, scenario: object) -> None:
+        self.calls.append("bootstrap")
+        super().bootstrap(scenario)  # type: ignore[arg-type]
+
+    def advance(self, duration_s: float) -> None:
+        self.calls.append("advance")
+        super().advance(duration_s)
+
+    def apply_intervention(self, payload: object) -> None:
+        self.calls.append("apply_intervention")
+        super().apply_intervention(payload)  # type: ignore[arg-type]
+
+    def telemetry(self, requested_keys: tuple[str, ...]) -> dict[str, float]:
+        self.calls.append("telemetry")
+        return dict(super().telemetry(requested_keys))
+
+
 class LocalFacadeHttpServerTests(unittest.TestCase):
     def setUp(self) -> None:
+        self.adapter = CountingAdapter()
         runtime = VpeRuntime(
             scenario=splenic_hemorrhage_learning_scenario(),
-            adapter=DeterministicPhysiologyAdapter(),
+            adapter=self.adapter,
         )
         runtime.start()
         self.runtime = runtime
@@ -63,6 +88,15 @@ class LocalFacadeHttpServerTests(unittest.TestCase):
         )
         self.assertNotIn("engine_version", snapshot)
         self.assertNotIn("reason", snapshot)
+
+    def test_client_http_gets_do_not_touch_physiology_adapter(self) -> None:
+        calls_before = tuple(self.adapter.calls)
+
+        for path in ("/state", "/snapshot", "/events"):
+            status, _ = self._request(path)
+            self.assertEqual(200, status)
+
+        self.assertEqual(calls_before, tuple(self.adapter.calls))
 
     def test_http_submits_command_but_host_processes_it(self) -> None:
         before = self.runtime.simulation_time_s
