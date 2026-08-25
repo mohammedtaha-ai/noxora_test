@@ -45,7 +45,7 @@ final class PortableEventEnvelope
 
     private static function validator(): CompliantValidator
     {
-        return self::$validator ??= new CompliantValidator();
+        return self::$validator ??= new CompliantValidator;
     }
 
     private static function schema(string $relativePath): stdClass
