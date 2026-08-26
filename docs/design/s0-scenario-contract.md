@@ -73,7 +73,7 @@ completion:
 | `mode` يساوي `learning`. | يمنع تسرب وضع تقييم عالي العواقب. |
 | النزف جزء من `pathology` عند البدء. | الإصابة موجودة قبل البداية، وليست أمر متعلم. |
 | `learning_objectives` تحفظ كنصوص مؤلفة غير فارغة. | يمنع فقد الهدف التعليمي من الملف المصدر. |
-| `history.allowed_intents` يقتصر على أسئلة/محاولات استجلاء معلومة من المريض. | يفصل جمع التاريخ عن الاستدلال. |
+| `history.allowed_intents` يقتصر في S0 على `PAIN_ONSET` و`PAIN_LOCATION` و`MECHANISM_OF_INJURY`. | يكفي دليل LO-02 الأساسي؛ توسيع النوايا يتطلب هدفًا/evidence ومراجعة محتوى، لا قاموسًا أكبر فقط. |
 | `clinical_hypotheses.allowed` يصرح بفرضيات منظمة فقط. | يسجل استدلال المتعلم دون نص حر أو ادعاء تشخيص واقعي. |
 | `VITALS` قدرة monitor مدمجة؛ `FAST` و`CBC` لا يظهران إلا عند تأليفهما في `observations.allowed`. | مصدر حقيقة واحد لقائمة الملاحظات. |
 | تدخلات Pulse تشير إلى قاموس محدود. | يمنع نصوص أو أوامر Pulse خامة. |
@@ -82,8 +82,8 @@ completion:
 
 ## عقد الحدث
 
-يلزم أن يطابق كل حدث [`schemas/event-envelope.schema.json`](../../schemas/event-envelope.schema.json). تشمل الأحداث المنظمة: `clinical.intent.recorded` و`clinical.hypothesis.recorded` و`observation.requested` و`escalation.recorded`، إضافة إلى أحداث الزمن والتدخل واللقطات والـcheckpoint. لا يغير history أو hypothesis أو observation أو escalation محرك Pulse أو زمن المحاكاة في S0.
+يلزم أن يطابق كل حدث [`schemas/event-envelope.schema.json`](../../schemas/event-envelope.schema.json) v1.1. تشمل الأحداث المنظمة: `clinical.intent.recorded` و`clinical.hypothesis.recorded` و`observation.requested` و`escalation.recorded`، إضافة إلى أحداث الزمن والتدخل واللقطات والـcheckpoint و`runtime.paused_by_system` التشغيلي. لا يغير history أو hypothesis أو observation أو escalation محرك Pulse أو زمن المحاكاة في S0. أما `fast.acquisition.recorded` فليس حدث S0 لأنه لا producer له قبل M4.
 
 ## Snapshot وcheckpoint
 
-`Snapshot` حدث عرض/مراجعة خفيف يحوي الهوية والزمن وإصدار المحرك وtelemetry وسبب النشر؛ لا يحمل state قابلًا للاستعادة. `CREATE_CHECKPOINT` فقط ينشئ artifact محرك منفصل. وتبقى استعادة checkpoint داخل الجلسة مثبتة، أما الاستعادة عبر إعادة تشغيل Runtime فغير مثبتة في S0. التفاصيل في [عقد PulseAdapter](../contracts/pulse-adapter-process-contract.md).
+`Snapshot` حدث عرض/مراجعة خفيف يحوي الهوية والزمن وإصدار المحرك وtelemetry وسبب النشر؛ لا يحمل state قابلًا للاستعادة. يقرأ M6 الأحداث واللقطات إلى canonical timeline مهيكل ويقيّم evidence بلا إعادة تشغيل Pulse. `CREATE_CHECKPOINT` ينشئ artifact محركًا منفصلًا داخل Runtime قائم فقط؛ branch replay عبر إعادة تشغيل Runtime **خارج نطاق S0** وفق [ADR-019](../decisions/ADR-019-s0-canonical-replay-and-checkpoint-branch-scope.md). التفاصيل في [عقد PulseAdapter](../contracts/pulse-adapter-process-contract.md) و[traceability v1.1](s0-event-contract-traceability.md).

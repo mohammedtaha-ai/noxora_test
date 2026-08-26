@@ -9,8 +9,10 @@
 
 | البعد | الحالة | المعنى الدقيق |
 |---|---|---|
-| **S0 Python VPE + C++ Pulse** | `KEEP / FROZEN SCOPE` | النواة headless وPulseAdapter ظلا كما هما؛ لا rewrite ولا clinical/S0 capability جديدة. Python يظل مالك VPE/الساعة مستقبلًا وPulse/C++ مالك الفيزيولوجيا. |
+| **S0 Python VPE + C++ Pulse** | `KEEP / FROZEN SCOPE` | أضيفت consumers M6 headless للأدلة فقط؛ لا rewrite لـPulseAdapter ولا قدرة سريرية/S0 learner action جديدة. Python يظل مالك VPE/الساعة مستقبلًا وPulse/C++ مالك الفيزيولوجيا. |
 | **Pulse/VPE one-host capacity** | `MEASURED / LOCAL DIAGNOSTIC` | N=1–32 full run وامتداد N=48/64/96. أول hard tick overrun ظهر عند N=96 وCPU≈98%؛ هذا ليس SLA أو deployment density. |
+| **M6 canonical evidence/replay** | `VERIFIED / HEADLESS ONLY` | evaluator pure وcanonical replay/timeline يستهلكان events+snapshots؛ لا LLM أو Unity أو Pulse rerun في القارئ، ولا score/pass-fail. |
+| **S0 event contract** | `FROZEN v1.1` | traceability مكتمل لكل event/snapshot field؛ أزيل FAST acquisition غير المنتج وأضيف `runtime.paused_by_system` كدليل سلامة replay-only. |
 | **Go Platform Plane Phase 1** | `FROZEN BY PRODUCT OWNER — DOCUMENTED SPIKE` | يجمد `apps/platform-plane` عند HEAD `2739b579053898df45ab189223dbddb2410a29fb`. لا worker/transport/broker/RPC/Pulse integration أو migrations/ميزات جديدة. |
 | **Laravel Control Plane** | `FROZEN BY PRODUCT OWNER` | يجمد `apps/control-plane`: لا features ولا migrations ولا schema/ORM changes. ADR-018 يقارن فقط باحتمال Python/FastAPI + SQLAlchemy + Alembic ويؤجل الهجرة. |
 | **Gate 0 value discovery** | `READY_FOR_EXECUTION / INCONCLUSIVE` | البروتوكول والخطة جاهزان؛ لا توجد مشاركات حقيقية بعد. يلزم ≥5 متعلمين سريريين و≥3 أطباء/مثقفين/مدرسين. |
@@ -26,7 +28,7 @@
 | Gate A Pulse | `VERIFIED ENGINEERING ONLY` | نزف/HR/MAP/حجم الدم، saline وPackedRBC، checkpoint/restore لمسار محدد؛ ليس تحققًا طبيًا. |
 | Go Phase 1/rework | `PASS AS FROZEN SPIKE` | GitHub Actions Platform run `33006772086` اجتاز SHA `adbfe6a7b4cfc48ee4a433dd50c910e855f6642a`؛ لا يعني السماح بالمرحلة التالية. |
 | Laravel validation | `PASS HISTORICAL` | 29 tests / 102 assertions محليًا؛ لا يبرر ميزات أو migrations جديدة. |
-| Python/Pulse validation | `PASS HISTORICAL` | 56 tests، 8 Pulse SDK integrations حقيقية، 0 skipped في آخر run قبل هذا التغيير. |
+| Python/Pulse validation | `PASS M6` | 70 tests، بما فيها evaluator/replay/contract/regression الجديدة و8 Pulse SDK integrations حقيقية، 0 skipped. |
 
 ## قياس Pulse/VPE المحلي
 
@@ -56,7 +58,7 @@
 |---|---|
 | إيقاف النزف | primitive المحرك موجود لكنه **استبعاد S0 مقصود**؛ لا يظهر فعل متعلم قبل M7 ولا يبنى الآن. |
 | الأكسجة | `oxygen_saturation` `PARTIAL` ويُخفى من projection/client حتى تجربة مستقلة ومراجعة محتوى موثقة. |
-| branch replay عبر جلسات | غير منفذ؛ checkpoint الحالي in-session فقط. |
+| branch replay عبر جلسات | **OUT OF S0 SCOPE** وفق ADR-019؛ checkpoint in-session primitive هندسي/debug فقط، وM6 يقدم canonical timeline/findings. |
 | TXA/vasopressor | خارج S0؛ لا توسعة قدرة سريرية. |
 
 التفصيل في [مصفوفة Pulse S0](../research/pulse-s0-capability-matrix-post-gate-a.md) و[ADR-016](../decisions/ADR-016-s0-hemorrhage-control-and-oxygen-display-boundary.md).
@@ -69,13 +71,16 @@
 
 - [ADR-017: runtime freeze وسياسة اللغات](../decisions/ADR-017-product-owner-runtime-freeze-and-language-policy.md).
 - [ADR-018: Laravel مقابل Python control-plane](../decisions/ADR-018-laravel-versus-python-control-plane-evaluation.md).
+- [ADR-019: canonical replay وcheckpoint scope](../decisions/ADR-019-s0-canonical-replay-and-checkpoint-branch-scope.md).
+- [ADR-020: event contract v1.1 freeze](../decisions/ADR-020-s0-event-contract-v1-1-freeze.md).
+- [traceability عقد الأحداث v1.1](../design/s0-event-contract-traceability.md) و[تقرير regression](../reports/013-pulse-regression-replay-reproducibility.md).
 - [خطة Gate 0 التشغيلية](../gate0/2026-08-26-gate-0-execution-plan.md).
 - [المراجعة الطبية S0](../validation/s0-medical-review-packet.md).
 - [نسخ حوكمة v0.3 وDEC-007→011](../governance/README.md).
 
 ## الإجراء التالي الوحيد الموصى به
 
-ينفذ Product Owner/المؤسسة **التوظيف البشري والموافقة والجدولة** لخطة Gate 0، ويرسل Review Coordinator حزمة المراجعة إلى مراجع مستقل. تظل النتيجة `INCONCLUSIVE / UNVALIDATED` حتى استلام الدليل؛ لا تبدأ أي مرحلة هندسية متجمدة في انتظار ذلك.
+توقفت دفعة M6 هنا. الإجراء الخارجي الوحيد هو أن ينفذ Product Owner/المؤسسة **التوظيف البشري والموافقة والجدولة** لخطة Gate 0، وأن يرسل Review Coordinator حزمة المراجعة إلى مراجع مستقل. تظل النتيجة `INCONCLUSIVE / UNVALIDATED` حتى استلام الدليل؛ لا تبدأ M4/M5/Unity/AI أو أي مرحلة مجمدة من هذه الحالة.
 
 ## References
 

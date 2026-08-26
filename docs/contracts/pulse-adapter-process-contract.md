@@ -58,7 +58,7 @@ Pulse state + telemetry
 | المفهوم | المحتوى | الغرض | حدود S0 الحالية |
 |---|---|---|---|
 | **Canonical Replay** | events مرتبة و`Snapshot` خفيف يحوي `snapshot_id` و`scenario_id` ووقت المحاكاة وإصدار المحرك وtelemetry وسبب النشر فقط. | أثر تشغيلي قابل للعرض والمراجعة. | لا يتضمن حالة Pulse قابلة للاستعادة ولا يعيد بناء فرع فيزيولوجي بذاته. |
-| **Checkpoint Branch** | artifact محرك صريح خاص بالـadapter، يشمل metadata وملف Pulse state وdigest. | استعادة داخل الجلسة لمسار بديل أو مكرر. | لا يثبت branch replay عبر إعادة تشغيل Runtime أو عبر جهاز آخر. |
+| **Checkpoint Branch** | artifact محرك صريح خاص بالـadapter، يشمل metadata وملف Pulse state وdigest. | debug/integration داخل Runtime قائم فقط. | ADR-019 يخرج branch replay عبر restart أو جهاز آخر من S0؛ ليس قدرة منتج أو متعلم. |
 
 لا يستدعي نشر `Snapshot` عادي `SAVE`. لا يحدث `SAVE` إلا عند `CREATE_CHECKPOINT` صريح أو سياسة مستقبلية موثقة ومختبرة. وتُبقي `checkpoint.restore` ترتيب الأدلة كمعلَم فرع حتى لو عاد زمن المحاكاة إلى قيمة أصغر.
 
@@ -66,7 +66,7 @@ Pulse state + telemetry
 
 التسلسل القانوني للـcheckpoint هو حفظ state، ثم استمرار مسار أصلي، ثم استعادة state نفسها، ثم تقدم بديل أو مكرر. لا تصف Nexora هذا كضمان determinism عام. يثبت اختبار التكامل فقط أن القيم الخمس المراقبة تتطابق ضمن دقة `assertAlmostEqual(..., places=6)` للمسار والنسخة والمدخلات المختبرة.
 
-**داخل الجلسة:** checkpoint صريح في `VpeRuntime` قابل للاستعادة طالما بقي adapter ومجلد artifact متاحين. **عبر الجلسات:** غير مثبتة في S0؛ وجود `state_directory` صريح لا يساوي سياسة artifact دائمة أو اختبار توافق عبر إعادة تشغيل Runtime. لا يجوز الادعاء بهذه القدرة قبل تنفيذ تخزين دائم، manifest، تحقق provenance، واختبار استعادة منفصل.
+**داخل Runtime قائم:** checkpoint صريح في `VpeRuntime` قابل للاستعادة طالما بقي adapter ومجلد artifact متاحين، ويظل primitive هندسيًا لا قدرة متعلم. **عبر restart/جلسة جديدة:** خارج نطاق S0 وفق [ADR-019](../decisions/ADR-019-s0-canonical-replay-and-checkpoint-branch-scope.md). وجود `state_directory` صريح لا ينشئ promise ديمومة؛ فتح النطاق لاحقًا يتطلب تخزينًا durable وmanifest وprovenance وaccess/retention policy واختبار restart وADR جديدًا.
 
 ## التنفيذ والاختبار
 
