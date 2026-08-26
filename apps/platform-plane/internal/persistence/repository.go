@@ -22,6 +22,7 @@ var (
 	ErrLeaseStateNotEligible  = errors.New("session state is not lease eligible")
 	ErrStaleGeneration        = errors.New("stale generation")
 	ErrSessionNotFound        = errors.New("session not found")
+	ErrPlatformSchemaNotReady = errors.New("platform schema is not ready")
 )
 
 type Repository struct {
@@ -32,8 +33,44 @@ func New(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
+const minimumPlatformSchemaVersion int64 = 3
+
 func (r *Repository) Ping(ctx context.Context) error {
 	return r.pool.Ping(ctx)
+}
+
+func (r *Repository) Ready(ctx context.Context) error {
+	var versionTableExists bool
+	if err := r.pool.QueryRow(ctx, `SELECT to_regclass('platform.goose_db_version') IS NOT NULL`).Scan(&versionTableExists); err != nil {
+		return fmt.Errorf("check platform migration relation: %w", err)
+	}
+	if !versionTableExists {
+		return fmt.Errorf("%w: platform.goose_db_version is missing", ErrPlatformSchemaNotReady)
+	}
+
+	var highestAppliedVersion int64
+	if err := r.pool.QueryRow(ctx, `SELECT COALESCE(MAX(version_id), 0) FROM platform.goose_db_version WHERE is_applied`).Scan(&highestAppliedVersion); err != nil {
+		return fmt.Errorf("read platform migration version: %w", err)
+	}
+	if highestAppliedVersion < minimumPlatformSchemaVersion {
+		return fmt.Errorf("%w: applied version %d is below required version %d", ErrPlatformSchemaNotReady, highestAppliedVersion, minimumPlatformSchemaVersion)
+	}
+
+	var requiredRelations int
+	if err := r.pool.QueryRow(ctx, `
+	SELECT count(*)
+	FROM unnest(ARRAY[
+		'platform.command_receipts',
+		'platform.sessions',
+		'platform.session_leases'
+	]) AS required_relation(name)
+	WHERE to_regclass(required_relation.name) IS NOT NULL`).Scan(&requiredRelations); err != nil {
+		return fmt.Errorf("check platform relations: %w", err)
+	}
+	if requiredRelations != 3 {
+		return fmt.Errorf("%w: required platform relations are missing", ErrPlatformSchemaNotReady)
+	}
+	return nil
 }
 
 func (r *Repository) Allocate(ctx context.Context, event contracts.Event) (session.AllocationResult, error) {
@@ -52,7 +89,7 @@ func (r *Repository) Allocate(ctx context.Context, event contracts.Event) (sessi
 		if err != nil {
 			return session.AllocationResult{}, err
 		}
-		if existing.eventID != event.EventID || existing.commandID != event.CommandID || existing.tenantID != event.TenantID || existing.payloadHash != event.PayloadHash {
+		if existing.eventID != event.EventID || existing.commandID != event.CommandID || existing.tenantID != event.TenantID || existing.payloadHash != event.PayloadHash || existing.immutableEnvelopeHash != event.ImmutableEnvelopeHash {
 			return session.AllocationResult{}, ErrEventIntegrityConflict
 		}
 		existingSession, err := r.getSessionByCommand(ctx, tx, event.CommandID)
@@ -107,20 +144,21 @@ RETURNING created_at, updated_at`,
 }
 
 type receipt struct {
-	eventID     uuid.UUID
-	commandID   uuid.UUID
-	tenantID    uuid.UUID
-	payloadHash string
+	eventID               uuid.UUID
+	commandID             uuid.UUID
+	tenantID              uuid.UUID
+	payloadHash           string
+	immutableEnvelopeHash string
 }
 
 func (r *Repository) insertReceipt(ctx context.Context, tx pgx.Tx, event contracts.Event) (bool, error) {
 	var eventID uuid.UUID
 	err := tx.QueryRow(ctx, `
 INSERT INTO platform.command_receipts (
-    event_id, command_id, tenant_id, event_type, schema_version, payload_hash, status
-) VALUES ($1,$2,$3,$4,$5,$6,'RECEIVED')
-ON CONFLICT DO NOTHING
-RETURNING event_id`, event.EventID, event.CommandID, event.TenantID, event.EventType, event.SchemaVersion, event.PayloadHash).Scan(&eventID)
+	    event_id, command_id, tenant_id, event_type, schema_version, payload_hash, immutable_envelope_hash, status
+	) VALUES ($1,$2,$3,$4,$5,$6,$7,'RECEIVED')
+	ON CONFLICT DO NOTHING
+	RETURNING event_id`, event.EventID, event.CommandID, event.TenantID, event.EventType, event.SchemaVersion, event.PayloadHash, event.ImmutableEnvelopeHash).Scan(&eventID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
@@ -133,12 +171,13 @@ RETURNING event_id`, event.EventID, event.CommandID, event.TenantID, event.Event
 func (r *Repository) lookupReceipt(ctx context.Context, tx pgx.Tx, event contracts.Event) (receipt, error) {
 	var existing receipt
 	err := tx.QueryRow(ctx, `
-SELECT event_id, command_id, tenant_id, payload_hash
+	SELECT event_id, command_id, tenant_id, payload_hash, immutable_envelope_hash
+
 FROM platform.command_receipts
-WHERE event_id = $1 OR command_id = $2
-ORDER BY received_at
-LIMIT 1
-FOR UPDATE`, event.EventID, event.CommandID).Scan(&existing.eventID, &existing.commandID, &existing.tenantID, &existing.payloadHash)
+	WHERE event_id = $1 OR command_id = $2
+	ORDER BY received_at
+	LIMIT 1
+	FOR UPDATE`, event.EventID, event.CommandID).Scan(&existing.eventID, &existing.commandID, &existing.tenantID, &existing.payloadHash, &existing.immutableEnvelopeHash)
 	if err != nil {
 		return receipt{}, fmt.Errorf("lookup duplicate command receipt: %w", err)
 	}

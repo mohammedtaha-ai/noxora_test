@@ -74,6 +74,39 @@ func TestLoopbackAdapterRejectsMalformedAndOversizedIngress(t *testing.T) {
 	assertErrorCode(t, wrongType, http.StatusUnsupportedMediaType, "INVALID_EVENT")
 }
 
+func TestReadyRequiresMigratedPlatformSchema(t *testing.T) {
+	databaseURL := testsupport.TestDatabaseURL()
+	poolConfig, err := pgxpool.ParseConfig(databaseURL)
+	if err != nil {
+		t.Fatalf("parse test database URL: %v", err)
+	}
+	pool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
+	if err != nil {
+		t.Fatalf("open test pool: %v", err)
+	}
+	if err := testsupport.ResetPlatformSchema(context.Background(), databaseURL, pool); err != nil {
+		t.Fatalf("reset platform schema: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := testsupport.ResetPlatformSchema(context.Background(), databaseURL, pool); err != nil {
+			t.Errorf("reset platform schema during cleanup: %v", err)
+		}
+		pool.Close()
+	})
+
+	adapter := transport.NewHTTPAdapter(nil, persistence.New(pool), 1024)
+	missingSchema := httptest.NewRecorder()
+	adapter.Handler().ServeHTTP(missingSchema, httptest.NewRequest(http.MethodGet, "/readyz", nil))
+	assertErrorCode(t, missingSchema, http.StatusServiceUnavailable, "PLATFORM_SCHEMA_UNAVAILABLE")
+
+	applyMigrations(t, databaseURL)
+	ready := httptest.NewRecorder()
+	adapter.Handler().ServeHTTP(ready, httptest.NewRequest(http.MethodGet, "/readyz", nil))
+	if ready.Code != http.StatusOK {
+		t.Fatalf("ready after migrations status = %d, body=%s", ready.Code, ready.Body.String())
+	}
+}
+
 func newAdapter(t *testing.T, maxEventBytes int64) (*transport.HTTPAdapter, func()) {
 	t.Helper()
 	databaseURL := testsupport.TestDatabaseURL()

@@ -27,20 +27,21 @@ type Validator struct {
 }
 
 type Event struct {
-	EventID        uuid.UUID
-	CommandID      uuid.UUID
-	TenantID       uuid.UUID
-	AssignmentID   uuid.UUID
-	ScenarioID     uuid.UUID
-	ArtifactID     uuid.UUID
-	EventType      string
-	SchemaVersion  int
-	OccurredAt     time.Time
-	PayloadHash    string
-	Payload        map[string]any
-	Manifest       map[string]any
-	ArtifactSHA256 string
-	RuntimeVersion string
+	EventID               uuid.UUID
+	CommandID             uuid.UUID
+	TenantID              uuid.UUID
+	AssignmentID          uuid.UUID
+	ScenarioID            uuid.UUID
+	ArtifactID            uuid.UUID
+	EventType             string
+	SchemaVersion         int
+	OccurredAt            time.Time
+	PayloadHash           string
+	ImmutableEnvelopeHash string
+	Payload               map[string]any
+	Manifest              map[string]any
+	ArtifactSHA256        string
+	RuntimeVersion        string
 }
 
 type ValidationError struct {
@@ -155,24 +156,41 @@ func (v *Validator) Validate(raw []byte) (Event, error) {
 	if err != nil {
 		return Event{}, &ValidationError{Code: "INVALID_EVENT", Err: err}
 	}
+	immutableEnvelopeHash, err := hashJSON(map[string]any{
+		"event_id":       envelope["event_id"],
+		"command_id":     payload["command_id"],
+		"tenant_id":      envelope["tenant_id"],
+		"event_type":     envelope["event_type"],
+		"schema_version": envelope["schema_version"],
+		"producer":       envelope["producer"],
+		"aggregate_type": envelope["aggregate_type"],
+		"aggregate_id":   envelope["aggregate_id"],
+		"routing_key":    envelope["routing_key"],
+		"classification": envelope["classification"],
+		"payload":        payload,
+	})
+	if err != nil {
+		return Event{}, &ValidationError{Code: "INVALID_EVENT", Err: err}
+	}
 	artifactSHA256, _ := artifact["sha256"].(string)
 	runtimeVersion, _ := manifest["runtime_contract_version"].(string)
 
 	return Event{
-		EventID:        eventID,
-		CommandID:      commandID,
-		TenantID:       tenantID,
-		AssignmentID:   assignmentID,
-		ScenarioID:     scenarioID,
-		ArtifactID:     artifactID,
-		EventType:      eventType,
-		SchemaVersion:  schemaVersion,
-		OccurredAt:     occurredAt.UTC(),
-		PayloadHash:    payloadHash,
-		Payload:        payload,
-		Manifest:       manifest,
-		ArtifactSHA256: artifactSHA256,
-		RuntimeVersion: runtimeVersion,
+		EventID:               eventID,
+		CommandID:             commandID,
+		TenantID:              tenantID,
+		AssignmentID:          assignmentID,
+		ScenarioID:            scenarioID,
+		ArtifactID:            artifactID,
+		EventType:             eventType,
+		SchemaVersion:         schemaVersion,
+		OccurredAt:            occurredAt.UTC(),
+		PayloadHash:           payloadHash,
+		ImmutableEnvelopeHash: immutableEnvelopeHash,
+		Payload:               payload,
+		Manifest:              manifest,
+		ArtifactSHA256:        artifactSHA256,
+		RuntimeVersion:        runtimeVersion,
 	}, nil
 }
 

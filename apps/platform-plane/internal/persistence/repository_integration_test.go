@@ -2,6 +2,7 @@ package persistence_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -47,6 +48,59 @@ func TestPostgresAllocationDeduplicatesAndFencesConflicts(t *testing.T) {
 	}
 	assertCount(t, pool, "SELECT count(*) FROM platform.command_receipts", 1)
 	assertCount(t, pool, "SELECT count(*) FROM platform.sessions", 1)
+}
+
+func TestPostgresImmutableEnvelopeMetadataMismatchConflicts(t *testing.T) {
+	repository, _ := newIntegrationRepository(t)
+	if _, err := repository.Allocate(context.Background(), validEvent(t)); err != nil {
+		t.Fatalf("allocate baseline event: %v", err)
+	}
+
+	for field, value := range map[string]any{
+		"producer":       "control-plane.changed",
+		"aggregate_type": "ChangedAggregate",
+		"aggregate_id":   "018f5f54-8c8e-7000-8000-000000000099",
+		"routing_key":    "018f5f54-8c8e-7000-8000-000000000100",
+		"classification": "RESTRICTED",
+	} {
+		t.Run(field, func(t *testing.T) {
+			modified := eventFromFixtureMutation(t, func(envelope map[string]any) {
+				envelope[field] = value
+			})
+			if _, err := repository.Allocate(context.Background(), modified); !errors.Is(err, persistence.ErrEventIntegrityConflict) {
+				t.Fatalf("modified immutable %s error = %v, want EVENT_INTEGRITY_CONFLICT", field, err)
+			}
+		})
+	}
+
+	payloadChanged := eventFromFixtureMutation(t, func(envelope map[string]any) {
+		payload := envelope["payload"].(map[string]any)
+		payload["requester_user_id"] = "018f5f54-8c8e-7000-8000-000000000101"
+	})
+	if _, err := repository.Allocate(context.Background(), payloadChanged); !errors.Is(err, persistence.ErrEventIntegrityConflict) {
+		t.Fatalf("modified immutable payload error = %v, want EVENT_INTEGRITY_CONFLICT", err)
+	}
+}
+
+func TestPostgresRedeliveryAllowsNonSemanticTransportMetadataChanges(t *testing.T) {
+	repository, _ := newIntegrationRepository(t)
+	first, err := repository.Allocate(context.Background(), validEvent(t))
+	if err != nil {
+		t.Fatalf("allocate baseline event: %v", err)
+	}
+	redelivery := eventFromFixtureMutation(t, func(envelope map[string]any) {
+		envelope["occurred_at"] = "2026-08-27T12:00:00.000Z"
+		envelope["correlation_id"] = "018f5f54-8c8e-7000-8000-000000000112"
+		envelope["causation_id"] = "018f5f54-8c8e-7000-8000-000000000113"
+		envelope["trace_id"] = "transport-trace-redelivery"
+	})
+	duplicate, err := repository.Allocate(context.Background(), redelivery)
+	if err != nil {
+		t.Fatalf("redelivery with transport metadata changes: %v", err)
+	}
+	if !duplicate.Duplicate || duplicate.Session.ID != first.Session.ID {
+		t.Fatalf("transport-only redelivery did not return original session: %+v", duplicate)
+	}
 }
 
 func TestPostgresConcurrentSameEventCreatesOneReceiptAndSession(t *testing.T) {
@@ -240,6 +294,32 @@ func cleanupPlatformSchema(t *testing.T, databaseURL string, pool *pgxpool.Pool)
 	if err := testsupport.ResetPlatformSchema(context.Background(), databaseURL, pool); err != nil {
 		t.Fatalf("reset platform schema: %v", err)
 	}
+}
+
+func eventFromFixtureMutation(t *testing.T, mutate func(map[string]any)) contracts.Event {
+	t.Helper()
+	contents, err := os.ReadFile(filepath.Join(repositoryRoot(t), "contracts", "fixtures", "simulation_start_requested_v1.valid.json"))
+	if err != nil {
+		t.Fatalf("read fixture for mutation: %v", err)
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(contents, &envelope); err != nil {
+		t.Fatalf("decode fixture for mutation: %v", err)
+	}
+	mutate(envelope)
+	mutated, err := json.Marshal(envelope)
+	if err != nil {
+		t.Fatalf("encode mutated fixture: %v", err)
+	}
+	validator, err := contracts.Load(repositoryRoot(t))
+	if err != nil {
+		t.Fatalf("load canonical contracts: %v", err)
+	}
+	event, err := validator.Validate(mutated)
+	if err != nil {
+		t.Fatalf("validate mutated fixture: %v", err)
+	}
+	return event
 }
 
 func validEvent(t *testing.T) contracts.Event {

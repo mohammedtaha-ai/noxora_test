@@ -53,6 +53,10 @@ func (a *HTTPAdapter) ready(response http.ResponseWriter, request *http.Request)
 		writeError(response, http.StatusServiceUnavailable, "DATABASE_UNAVAILABLE", "platform database is unavailable")
 		return
 	}
+	if err := a.repository.Ready(ctx); err != nil {
+		writeError(response, http.StatusServiceUnavailable, "PLATFORM_SCHEMA_UNAVAILABLE", "platform schema is unavailable or not migrated")
+		return
+	}
 	writeJSON(response, http.StatusOK, map[string]string{"status": "ready"})
 }
 
