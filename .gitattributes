@@ -1,0 +1,4 @@
+# Governance source copies are preserved byte-for-byte from the approved shared source.
+# Their Markdown hard-break whitespace is intentional and covered by provenance hashes.
+docs/governance/nexora_vpe_master_plan_v0.3.md whitespace=-trailing-space
+docs/governance/nexora_vpe_decisions_DEC-007_to_DEC-011.md whitespace=-trailing-space
