@@ -11,7 +11,7 @@
 |---|---|
 | `LO-01` | التعرف على التدهور واشتباك فرضية النزف الداخلي. |
 | `LO-02` | بناء تاريخ موجّه محدود. |
-| `LO-03` | طلب FAST؛ اكتساب FAST الفعلي خارج S0 حتى M4. |
+| `LO-03` | سلسلة FAST داخل S0: طلب الدليل ثم FAST acquisition صالح/غير صالح عند M4؛ event محجوز في v1.1 ولا producer له في M6. |
 | `LO-04` | فهم أثر زمن المحاكاة. |
 | `LO-05` | تطبيق إنعاش من قاموس مقيد. |
 | `LO-06` | مراجعة timeline والأدلة واللقطات بلا اختراع أحداث. |
@@ -19,7 +19,7 @@
 
 ## Envelope traceability — صف صريح لكل event type/field
 
-الجدول التالي هو cross-product الصريح للحقول المشتركة على الأنواع العشرة في v1.1. لكل صف مستهلك أو سبب احتفاظ قابل للمراجعة؛ لا يعتمد freeze على اختزال «كل الأنواع» ضمنيًا.
+الجدول التالي هو cross-product الصريح للحقول المشتركة على الأنواع الأحد عشر في v1.1. لكل صف مستهلك أو سبب احتفاظ قابل للمراجعة؛ لا يعتمد freeze على اختزال «كل الأنواع» ضمنيًا.
 
 | event type | field | المستهلك أو التبرير الصريح | هدف التعلم |
 |---|---|---|---|
@@ -93,6 +93,13 @@
 | `runtime.paused_by_system` | `actor` | authority provenance: system فقط. | CONTRACT |
 | `runtime.paused_by_system` | `source` | producer provenance: `vpe_core`. | CONTRACT |
 | `runtime.paused_by_system` | `schema_version` | validator/migration boundary. | CONTRACT |
+| `fast.acquisition.recorded` **RESERVED** | `event_id` | finding link وtimeline cursor عندما يوجد producer M4؛ لا event في M6. | LO-03, LO-06 |
+| `fast.acquisition.recorded` **RESERVED** | `scenario_id` | replay stream binding عندما يوجد producer M4. | LO-03 / CONTRACT |
+| `fast.acquisition.recorded` **RESERVED** | `simulation_time_s` | يثبت موضع acquisition في زمن المحاكاة عند M4. | LO-03, LO-04 |
+| `fast.acquisition.recorded` **RESERVED** | `event_type` | schema/evaluator dispatch محفوظ قبل M3 client work. | LO-03 / CONTRACT |
+| `fast.acquisition.recorded` **RESERVED** | `actor` | authority provenance؛ producer M4 ليس learner command مباشرًا. | CONTRACT |
+| `fast.acquisition.recorded` **RESERVED** | `source` | محجوز لـ`future_fast_resolver`; لا producer حالي. | CONTRACT |
+| `fast.acquisition.recorded` **RESERVED** | `schema_version` | validator/migration boundary؛ لا v1.2 لمجرد M4 producer. | CONTRACT |
 
 ## Payload traceability — صف لكل event field
 
@@ -120,6 +127,7 @@
 | `escalation.recorded` | `payload.command_id` | CONTRACT: correlates structured escalation. | CONTRACT |
 | `escalation.recorded` | `payload.escalation_id` | evaluator يثبت وجود نية escalation؛ لا حكم قبول/رفض أو outcome. | LO-06 |
 | `runtime.paused_by_system` | `payload.reason` | evaluator يستهلك event كـsession marker `PAUSED_BY_SYSTEM`؛ reason سجل safety context لا finding للمتعلم. | LO-06 / CONTRACT |
+| `fast.acquisition.recorded` **RESERVED** | `payload` | لا payload field contract مفعل في M6 لأن producer غير موجود. قبل M4 يجب ADR/traceability لتحديد structured valid/invalid acquisition semantics وconsumer tests؛ لا نص حر. | LO-03 / CONTRACT |
 
 ## Snapshot traceability
 
@@ -138,7 +146,7 @@
 
 ## pass 1: fields غير المستهلكة
 
-لم يبق field بلا evaluator أو replay consumer أو تبرير `CONTRACT` محدد. أزيل من enum/schema v1.1 الحدث غير المنتج `fast.acquisition.recorded` بدل إبقائه كـplaceholder؛ acquisition الفعلي لا يملك producer في S0 ولا يجوز لعقد العميل أن يعد به قبل M4.
+لم يبق field بلا evaluator أو replay consumer أو تبرير `CONTRACT` محدد. `fast.acquisition.recorded` يبقى في enum/schema v1.1 كـ**RESERVED** لأن M4 جزء من S0 وينتهي بدليل FAST منظم؛ لا يملك M6 producer، ويثبت evaluator ذلك بـ`UNMEASURABLE` بدل حذفه أو معاملته خارج S0.
 
 ## pass 2: rubric dimensions غير القابلة للقياس
 
@@ -147,7 +155,7 @@
 | ملاحظة التدهور | قابل للقياس فقط عندما يوجد `VITALS` ولقطتان منشورتان على الأقل؛ وإلا `UNMEASURABLE`. |
 | اشتباه النزف الداخلي | قابل للقياس فقط عندما يوجد `clinical.hypothesis.recorded:INTERNAL_BLEEDING`؛ وإلا `UNMEASURABLE`. |
 | طلب FAST | قابل للقياس عندما يوجد `observation.requested:FAST`؛ وإلا `UNMEASURABLE`. |
-| اكتساب FAST صالح | **OUT OF S0 SCOPE** حتى M4؛ يبقى `UNMEASURABLE` بمفتاح signal صريح، ولا يضاف event بلا producer. |
+| اكتساب FAST صالح | داخل نطاق S0/M4 لكنه **RESERVED / UNMEASURABLE في M6**: enum محفوظ، لا producer حالي، وmissing signal هو `fast.acquisition.recorded:RESERVED_UNTIL_M4`. |
 | الإنعاش | قابل للقياس عند `intervention.applied`؛ لا يقيّم الجودة السريرية. |
 | إعادة التقييم | قابل للقياس عند observation مسجل بعد intervention؛ وإلا `UNMEASURABLE`. |
 | التصعيد | قابل للقياس عند `escalation.recorded`؛ لا يثبت ملاءمة واقعية. |
@@ -161,3 +169,4 @@
 [1] [مسودة rubric S0](s0-draft-rubric.md)، [جرد الأدلة](s0-evidence-inventory.md)، و[implementation evaluator](../../src/nexora_vpe/evidence_evaluator.py).
 [2] [أهداف تعلم S0](s0-learning-objectives.md) و[scenario contract](s0-scenario-contract.md).
 [3] [ADR-016: حد الأكسجة/النزف](../decisions/ADR-016-s0-hemorrhage-control-and-oxygen-display-boundary.md) و[ADR-019: scope replay](../decisions/ADR-019-s0-canonical-replay-and-checkpoint-branch-scope.md).
+[4] [Master Plan v0.3، FAST spatial chain](../governance/nexora_vpe_master_plan_v0.3.md) و[DEC-009](../governance/nexora_vpe_decisions_DEC-007_to_DEC-011.md#decision).

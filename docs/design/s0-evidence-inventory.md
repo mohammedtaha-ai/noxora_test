@@ -10,7 +10,7 @@
 | `E-HISTORY` | نية تاريخ منظمة | `clinical.intent.recorded` | debrief | يوثق محاولة استجلاء معلومة، لا جودة الحوار الحر. |
 | `E-HYPOTHESIS` | فرضية سريرية منظمة | `clinical.hypothesis.recorded` | debrief | يسجل اختيارًا ضمن السيناريو، لا تشخيصًا واقعيًا أو نصًا حرًا. |
 | `E-OBSERVATION` | `VITALS` المدمج أو طلب مؤلف في السيناريو | `observation.requested` | debrief، واجهة مستقبلية | لا يساوي نتيجة فحص حر قبل وجود resolver محدد. |
-| `E-FAST` | resolver + finding مضبوط بالسيناريو | **لا يوجد event في S0 v1.1**؛ قد يعرّف M4 producer/version جديدين | debrief لاحق | مؤجل حتى مرحلة FAST؛ لا يمثل تصويرًا طبيًا حرًا ولا يجوز أن يعد به عقد S0 الحالي. |
+| `E-FAST` | resolver + finding مضبوط بالسيناريو | `fast.acquisition.recorded` **RESERVED في S0 v1.1**؛ producer `future_fast_resolver` غير منفذ حتى M4 | debrief لاحق | الحجز يمنع كسر enum/projection لاحقًا؛ لا يمثل تصويرًا طبيًا حرًا ولا يتيح M6 producer أو resolver. |
 | `E-ESCALATION` | معرف مصرح به في قاموس السيناريو | `escalation.recorded` | timeline، debrief | يثبت نية منظمة فقط؛ لا يغير Pulse ولا يثبت ملاءمة القرار واقعيًا. |
 | `E-INTERVENTION` | أمر مقبول وقاموس تدخلات | `intervention.applied` | Pulse adapter، timeline | قبول المحرك ليس توصية أو مصادقة طبية. |
 | `E-TIMELINE` | ساعة VPE وتسلسل أوامر | جميع أحداث envelope | replay، debrief | زمن محاكاة فقط؛ لا يضم زمن شبكي أو LLM. |

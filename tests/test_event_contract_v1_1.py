@@ -6,7 +6,7 @@ import unittest
 
 from nexora_vpe import DeterministicPhysiologyAdapter, VpeRuntime
 from nexora_vpe.events import validate_event
-from nexora_vpe.model import Event, EventType, SCHEMA_VERSION
+from nexora_vpe.model import CommandKind, Event, EventContractStatus, EventType, SCHEMA_VERSION, event_contract_status
 from nexora_vpe.scenario import splenic_hemorrhage_learning_scenario
 
 
@@ -20,8 +20,24 @@ class EventContractV11Tests(unittest.TestCase):
             {event_type.value for event_type in EventType},
             set(schema["properties"]["event_type"]["enum"]),
         )
-        self.assertNotIn("fast.acquisition.recorded", schema["properties"]["event_type"]["enum"])
+        self.assertIn("fast.acquisition.recorded", schema["properties"]["event_type"]["enum"])
         self.assertIn("runtime.paused_by_system", schema["properties"]["event_type"]["enum"])
+        fast_status = schema["x-nexora-event-type-status"]["fast.acquisition.recorded"]
+        self.assertEqual("RESERVED", fast_status["status"])
+        self.assertEqual("future_fast_resolver", fast_status["producer"])
+        self.assertFalse(fast_status["current_production"])
+        self.assertEqual(EventContractStatus.RESERVED, event_contract_status(EventType.FAST_ACQUISITION_RECORDED))
+        self.assertEqual(EventContractStatus.ACTIVE, event_contract_status(EventType.RUNTIME_PAUSED_BY_SYSTEM))
+
+    def test_reserved_fast_event_cannot_be_emitted_by_current_runtime_producers(self) -> None:
+        runtime = VpeRuntime(splenic_hemorrhage_learning_scenario(), DeterministicPhysiologyAdapter())
+        runtime.start()
+        runtime.submit(CommandKind.REQUEST_OBSERVATION, "learner", {"observation_id": "FAST"})
+        runtime.drain()
+        self.assertNotIn(
+            EventType.FAST_ACQUISITION_RECORDED,
+            {event.event_type for event in runtime.events()},
+        )
 
     def test_v1_0_event_is_rejected_without_silent_compatibility(self) -> None:
         old_event = Event(

@@ -12,7 +12,7 @@
 | **S0 Python VPE + C++ Pulse** | `KEEP / FROZEN SCOPE` | أضيفت consumers M6 headless للأدلة فقط؛ لا rewrite لـPulseAdapter ولا قدرة سريرية/S0 learner action جديدة. Python يظل مالك VPE/الساعة مستقبلًا وPulse/C++ مالك الفيزيولوجيا. |
 | **Pulse/VPE one-host capacity** | `MEASURED / LOCAL DIAGNOSTIC` | N=1–32 full run وامتداد N=48/64/96. أول hard tick overrun ظهر عند N=96 وCPU≈98%؛ هذا ليس SLA أو deployment density. |
 | **M6 canonical evidence/replay** | `VERIFIED / HEADLESS ONLY` | evaluator pure وcanonical replay/timeline يستهلكان events+snapshots؛ لا LLM أو Unity أو Pulse rerun في القارئ، ولا score/pass-fail. |
-| **S0 event contract** | `FROZEN v1.1` | traceability مكتمل لكل event/snapshot field؛ أزيل FAST acquisition غير المنتج وأضيف `runtime.paused_by_system` كدليل سلامة replay-only. |
+| **S0 event contract** | `FROZEN v1.1` | traceability مكتمل لكل event/snapshot field؛ `fast.acquisition.recorded` **RESERVED** لـM4 داخل S0 بلا producer حالي، و`runtime.paused_by_system` دليل سلامة replay-only. |
 | **Go Platform Plane Phase 1** | `FROZEN BY PRODUCT OWNER — DOCUMENTED SPIKE` | يجمد `apps/platform-plane` عند HEAD `2739b579053898df45ab189223dbddb2410a29fb`. لا worker/transport/broker/RPC/Pulse integration أو migrations/ميزات جديدة. |
 | **Laravel Control Plane** | `FROZEN BY PRODUCT OWNER` | يجمد `apps/control-plane`: لا features ولا migrations ولا schema/ORM changes. ADR-018 يقارن فقط باحتمال Python/FastAPI + SQLAlchemy + Alembic ويؤجل الهجرة. |
 | **Gate 0 value discovery** | `READY_FOR_EXECUTION / INCONCLUSIVE` | البروتوكول والخطة جاهزان؛ لا توجد مشاركات حقيقية بعد. يلزم ≥5 متعلمين سريريين و≥3 أطباء/مثقفين/مدرسين. |
@@ -28,7 +28,7 @@
 | Gate A Pulse | `VERIFIED ENGINEERING ONLY` | نزف/HR/MAP/حجم الدم، saline وPackedRBC، checkpoint/restore لمسار محدد؛ ليس تحققًا طبيًا. |
 | Go Phase 1/rework | `PASS AS FROZEN SPIKE` | GitHub Actions Platform run `33006772086` اجتاز SHA `adbfe6a7b4cfc48ee4a433dd50c910e855f6642a`؛ لا يعني السماح بالمرحلة التالية. |
 | Laravel validation | `PASS HISTORICAL` | 29 tests / 102 assertions محليًا؛ لا يبرر ميزات أو migrations جديدة. |
-| Python/Pulse validation | `PASS M6` | 70 tests، بما فيها evaluator/replay/contract/regression الجديدة و8 Pulse SDK integrations حقيقية، 0 skipped. |
+| Python/Pulse validation | `PASS M6 + corrective` | 74 tests، بما فيها evaluator/replay/contract/regression واختبارات FAST RESERVED/fail-open الجديدة و8 Pulse SDK integrations حقيقية، 0 skipped. |
 
 ## قياس Pulse/VPE المحلي
 

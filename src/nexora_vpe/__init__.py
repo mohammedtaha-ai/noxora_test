@@ -6,6 +6,7 @@ high-stakes assessment.
 """
 
 from .adapter import DeterministicPhysiologyAdapter, PhysiologyAdapter
+from .model import EventContractStatus, EventType, event_contract_status
 from .runtime import VpeRuntime
 from .scenario import S0Scenario
 from .scenario_io import load_s0_scenario
@@ -40,6 +41,9 @@ from .client_contracts import (
 
 __all__ = [
     "DeterministicPhysiologyAdapter",
+    "EventContractStatus",
+    "EventType",
+    "event_contract_status",
     "PhysiologyAdapter",
     "S0Scenario",
     "VpeRuntime",

@@ -55,7 +55,7 @@ python3 scripts/benchmark_pulse_regression_replay.py \
   --runs 5 --tolerance 1e-9
 ```
 
-يخرج harness برمز غير صفري إذا لم تتطابق shape أو تجاوزت أي قناة tolerance. النتيجة السلبية تبقى دليلًا صالحًا يجب تقريره، لا سببًا لزيادة tolerance بعد القياس.
+يخرج harness برمز غير صفري إذا لم تتطابق shape أو تجاوزت أي قناة tolerance. ومن الدفعة التصحيحية، يعامل baseline بلا snapshots أو baseline بلا telemetry channels كـ`non-comparable` بأسباب صريحة، وتكون نتيجته خارج tolerance؛ لذلك لا يمكن لمسار بلا evidence أن يخرج باعتباره `reproducible_within_declared_tolerance`. النتيجة السلبية تبقى دليلًا صالحًا يجب تقريره، لا سببًا لزيادة tolerance بعد القياس.
 
 ## References
 

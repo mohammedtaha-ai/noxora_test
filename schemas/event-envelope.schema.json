@@ -31,12 +31,22 @@
         "checkpoint.created",
         "checkpoint.restored",
         "escalation.recorded",
-        "runtime.paused_by_system"
+        "runtime.paused_by_system",
+        "fast.acquisition.recorded"
       ]
     },
     "actor": { "type": "string", "enum": ["learner", "runtime", "scenario", "system"] },
     "payload": { "type": "object" },
     "source": { "type": "string", "enum": ["vpe_core", "physiology_adapter", "scenario_runtime", "future_fast_resolver"] },
     "schema_version": { "type": "string", "const": "1.1" }
+  },
+  "x-nexora-event-type-status": {
+    "fast.acquisition.recorded": {
+      "status": "RESERVED",
+      "producer": "future_fast_resolver",
+      "available_from": "M4",
+      "consumer": "fast_acquisition evidence dimension",
+      "current_production": false
+    }
   }
 }

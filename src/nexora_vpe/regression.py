@@ -30,9 +30,15 @@ def compare_snapshot_trajectories(
     if tolerance < 0:
         raise ValueError("Tolerance must be non-negative")
     baseline = trajectories[0]
+    if not baseline:
+        return TrajectoryComparison(False, "baseline_has_no_snapshots", {})
     if any(len(trajectory) != len(baseline) for trajectory in trajectories[1:]):
         return TrajectoryComparison(False, "snapshot_count_mismatch", {})
-    channels = tuple(baseline[0].telemetry) if baseline else ()
+    channels = tuple(baseline[0].telemetry)
+    if not channels:
+        return TrajectoryComparison(False, "baseline_has_no_telemetry_channels", {})
+    if any(set(snapshot.telemetry) != set(channels) for snapshot in baseline):
+        return TrajectoryComparison(False, "baseline_snapshot_channel_set_mismatch", {})
     comparable = True
     for snapshot_index, baseline_snapshot in enumerate(baseline):
         if any(
@@ -65,6 +71,6 @@ def compare_snapshot_trajectories(
 def comparison_within_tolerance(comparison: TrajectoryComparison) -> bool:
     """Return the narrow observed condition used by the local harness conclusion."""
 
-    return comparison.comparable and all(
+    return comparison.comparable and bool(comparison.channels) and all(
         bool(channel["within_tolerance"]) for channel in comparison.channels.values()
     )

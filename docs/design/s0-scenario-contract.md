@@ -82,7 +82,7 @@ completion:
 
 ## عقد الحدث
 
-يلزم أن يطابق كل حدث [`schemas/event-envelope.schema.json`](../../schemas/event-envelope.schema.json) v1.1. تشمل الأحداث المنظمة: `clinical.intent.recorded` و`clinical.hypothesis.recorded` و`observation.requested` و`escalation.recorded`، إضافة إلى أحداث الزمن والتدخل واللقطات والـcheckpoint و`runtime.paused_by_system` التشغيلي. لا يغير history أو hypothesis أو observation أو escalation محرك Pulse أو زمن المحاكاة في S0. أما `fast.acquisition.recorded` فليس حدث S0 لأنه لا producer له قبل M4.
+يلزم أن يطابق كل حدث [`schemas/event-envelope.schema.json`](../../schemas/event-envelope.schema.json) v1.1. تشمل الأحداث المنظمة: `clinical.intent.recorded` و`clinical.hypothesis.recorded` و`observation.requested` و`escalation.recorded`، إضافة إلى أحداث الزمن والتدخل واللقطات والـcheckpoint و`runtime.paused_by_system` التشغيلي. `fast.acquisition.recorded` موجود **RESERVED** في v1.1 لأن M4 داخل S0؛ لا producer له قبل Anatomy Target Resolver في M4. لا يغير history أو hypothesis أو observation أو escalation محرك Pulse أو زمن المحاكاة في M6.
 
 ## Snapshot وcheckpoint
 

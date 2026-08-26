@@ -69,8 +69,11 @@ class EvidenceEvaluatorTests(unittest.TestCase):
             self.assertEqual("EVIDENCE_PRESENT", self._finding(result, dimension_id).status.value)
         fast_acquisition = self._finding(result, "fast_acquisition")
         self.assertEqual("UNMEASURABLE", fast_acquisition.status.value)
-        self.assertTrue(fast_acquisition.out_of_scope)
-        self.assertEqual(("fast.acquisition.recorded",), fast_acquisition.missing_signals)
+        self.assertFalse(fast_acquisition.out_of_scope)
+        self.assertEqual(
+            ("fast.acquisition.recorded:RESERVED_UNTIL_M4",),
+            fast_acquisition.missing_signals,
+        )
         self.assertNotIn("score", result.as_dict())
         self.assertNotIn("pass", result.as_dict())
 
@@ -90,6 +93,24 @@ class EvidenceEvaluatorTests(unittest.TestCase):
         self.assertEqual(EventType.INTERVENTION_APPLIED, event.event_type)
         self.assertEqual(120.0, event.simulation_time_s)
         self.assertEqual("UNMEASURABLE", self._finding(result, "reassessment").status.value)
+
+    def test_reserved_fast_acquisition_is_unmeasurable_and_not_emitted_by_current_producers(self) -> None:
+        runtime = self._runtime()
+        self._apply(runtime, CommandKind.REQUEST_OBSERVATION, {"observation_id": "FAST"})
+        self._apply(runtime, CommandKind.ADVANCE_TIME, {"duration_s": 30.0})
+
+        self.assertNotIn("record_fast_acquisition", {kind.value for kind in CommandKind})
+        self.assertNotIn(
+            EventType.FAST_ACQUISITION_RECORDED,
+            {event.event_type for event in runtime.events()},
+        )
+        finding = self._finding(evaluate_evidence(runtime.events(), runtime.snapshots()), "fast_acquisition")
+        self.assertEqual("UNMEASURABLE", finding.status.value)
+        self.assertFalse(finding.out_of_scope)
+        self.assertEqual(
+            ("fast.acquisition.recorded:RESERVED_UNTIL_M4",),
+            finding.missing_signals,
+        )
 
     def test_no_fast_emits_explicit_unmeasurable_signal(self) -> None:
         runtime = self._runtime()

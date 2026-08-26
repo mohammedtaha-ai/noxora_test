@@ -37,6 +37,42 @@ class RegressionComparisonTests(unittest.TestCase):
         self.assertFalse(comparison_within_tolerance(comparison))
         self.assertFalse(comparison.channels["heart_rate_bpm"]["within_tolerance"])
 
+    def test_rejects_zero_snapshot_trajectories_as_non_comparable(self) -> None:
+        comparison = compare_snapshot_trajectories(((), ()), 0.0)
+
+        self.assertFalse(comparison.comparable)
+        self.assertEqual("baseline_has_no_snapshots", comparison.reason)
+        self.assertEqual({}, comparison.channels)
+        self.assertFalse(comparison_within_tolerance(comparison))
+
+    def test_rejects_empty_telemetry_mapping_as_non_comparable(self) -> None:
+        empty_baseline = (
+            Snapshot(
+                snapshot_id="snp-empty",
+                scenario_id="trauma_splenic_01",
+                simulation_time_s=0.0,
+                engine_version="test-engine/1",
+                telemetry={},
+                reason="started",
+            ),
+        )
+        empty_repeat = (
+            Snapshot(
+                snapshot_id="snp-empty-repeat",
+                scenario_id="trauma_splenic_01",
+                simulation_time_s=0.0,
+                engine_version="test-engine/1",
+                telemetry={},
+                reason="started",
+            ),
+        )
+        comparison = compare_snapshot_trajectories((empty_baseline, empty_repeat), 0.0)
+
+        self.assertFalse(comparison.comparable)
+        self.assertEqual("baseline_has_no_telemetry_channels", comparison.reason)
+        self.assertEqual({}, comparison.channels)
+        self.assertFalse(comparison_within_tolerance(comparison))
+
     def test_rejects_shape_mismatch_as_non_comparable(self) -> None:
         baseline = (self._snapshot(10.0, 100.0),)
         repeat = (self._snapshot(10.0, 100.0), self._snapshot(20.0, 110.0))

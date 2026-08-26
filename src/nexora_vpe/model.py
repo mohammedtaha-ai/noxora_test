@@ -37,6 +37,25 @@ class EventType(str, Enum):
     CHECKPOINT_RESTORED = "checkpoint.restored"
     ESCALATION_RECORDED = "escalation.recorded"
     RUNTIME_PAUSED_BY_SYSTEM = "runtime.paused_by_system"
+    FAST_ACQUISITION_RECORDED = "fast.acquisition.recorded"
+
+
+class EventContractStatus(str, Enum):
+    """Declared availability of an event type in the frozen S0 contract."""
+
+    ACTIVE = "ACTIVE"
+    RESERVED = "RESERVED"
+
+
+_EVENT_CONTRACT_STATUSES: Mapping[EventType, EventContractStatus] = {
+    EventType.FAST_ACQUISITION_RECORDED: EventContractStatus.RESERVED,
+}
+
+
+def event_contract_status(event_type: EventType) -> EventContractStatus:
+    """Return the frozen contract status; unlisted event types are active now."""
+
+    return _EVENT_CONTRACT_STATUSES.get(event_type, EventContractStatus.ACTIVE)
 
 
 @dataclass(frozen=True)

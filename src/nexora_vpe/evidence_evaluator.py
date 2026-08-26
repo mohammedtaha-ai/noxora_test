@@ -110,6 +110,7 @@ def evaluate_evidence(events: Sequence[Event], snapshots: Sequence[Snapshot]) ->
         "INTERNAL_BLEEDING",
     )
     fast_events = _matching(events, EventType.OBSERVATION_REQUESTED, "observation_id", "FAST")
+    fast_acquisition_events = _matching(events, EventType.FAST_ACQUISITION_RECORDED)
     intervention_events = _matching(events, EventType.INTERVENTION_APPLIED)
     escalation_events = _matching(events, EventType.ESCALATION_RECORDED)
     reassessment_events = _observations_after_intervention(events, intervention_events)
@@ -143,11 +144,10 @@ def evaluate_evidence(events: Sequence[Event], snapshots: Sequence[Snapshot]) ->
         _finding(
             "fast_acquisition",
             "تسلسل FAST: اكتساب صالح",
-            False,
+            bool(fast_acquisition_events),
+            fast_acquisition_events,
             (),
-            (),
-            ("fast.acquisition.recorded",),
-            out_of_scope=True,
+            ("fast.acquisition.recorded:RESERVED_UNTIL_M4",),
         ),
         _finding(
             "resuscitation",
