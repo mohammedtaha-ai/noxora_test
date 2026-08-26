@@ -2,6 +2,7 @@
 
 **الحالة:** نموذج معماري توضيحي قابل لإعادة الإنتاج، وليس forecast أو benchmark أو SLA.  
 **مصدر الحساب:** `tools/calculate_capacity_model.py` و`artifacts/capacity_model/illustrative_capacity_model.csv`.
+**مرجع سعة Pulse/VPE المقاس:** [قياس المضيف الواحد v0.1](pulse-one-host-capacity-benchmark-v0.1.md) وartifacts الخام المقابلة؛ لا تدخل افتراضات هذا النموذج في قرار density.
 
 ## الغرض وحدود القراءة
 
@@ -19,7 +20,7 @@
 | telemetry samples | 2 لكل active session في الثانية | إظهار تضخم signals مقارنة بالأحداث | tick rate أو Unity FPS أو telemetry contract حالي. |
 | حجم telemetry sample | 200 B | حساب حجم تقريبي | encoding/provider compression. |
 | durable checkpoint interval | كل 10 دقائق | stress-test افتراضي لمسار artifact مستقبلي | feature S0 قائم أو recovery promise. |
-| durable checkpoint size | 2 MiB | إظهار أثر bytes/artifacts | Pulse checkpoint size الحقيقي. |
+| durable checkpoint size | 2 MiB | إظهار أثر bytes/artifacts | checkpoint production policy أو حجم كل سيناريو؛ قياس Pulse المحلي الحالي ≈2.23 MiB. [5] |
 | اليوم | 24 ساعة نشاط مستمر | تحويل rate إلى volume سهل المراجعة | تشغيل حقيقي بلا انقطاع. |
 
 المعادلات هي: `active = learners × 5%`، و`canonical/day = active × 8/min × 1,440`، و`telemetry/day = active × 2/s × 86,400`، و`checkpoint/day = active ÷ 10min × 1,440`. جميع تحويلات الحجم تستعمل GiB (`1024³` bytes).
@@ -41,7 +42,7 @@
 | canonical events أصغر نسبيًا | PostgreSQL outbox + immutable envelope contract | `EVT-BUS-02` عندما تحتاج replay/consumers/lag SLO فعليًا. |
 | telemetry يتضخم مع concurrency | لا raw telemetry في OLTP أو JSONB session row | `EVT-TELEM-05`/`ANL-RAW-04` عند تهديد outbox/OLTP. |
 | checkpoint storage يتضخم بسرعة | ObjectStorage reference/hash/classification contract | `SIM-RECOVER-03` حين يطلب product resume مثبتًا. |
-| active sessions stateful | worker pool/lease design فقط | `SIM-POOL-01` بعد قياس host capacity/failure blast radius. |
+| active sessions stateful | لا worker pool/lease implementation حاليًا؛ اعتمد benchmark Pulse/VPE المحلي لتوجيه تجربة لاحقة فقط. | لا يعاد فتح `SIM-POOL-01` إلا بعد Gate 0 والمراجعة الطبية/التعليمية ودليل failure blast radius/host target. |
 | dashboard/query isolation | rollups/derived data planned | `ANL-CH-01` بعد workload query/SLO evidence. |
 | region scaling | لا active-active default | `PLAT-REGION-03`/`TENANT-REGION-03` مع RPO/RTO/residency. |
 
@@ -58,7 +59,7 @@
 
 ## sensitivity rather than prediction
 
-إذا تغيرت نسبة concurrent learners أو events/min أو sample size أو retention، تتغير النتائج خطيًا في هذا النموذج. لذلك يجب تعديل input constants في script وحفظ result CSV مع كل architecture review، بدل إعادة استخدام الجدول الحالي كحقيقة. ووجود tick benchmark محلي 0.5s في S0 لا يدخل هنا كـcapacity input؛ ذلك benchmark timing محلي وليس SLA أو Unity FPS.
+إذا تغيرت نسبة concurrent learners أو events/min أو sample size أو retention، تتغير النتائج خطيًا في هذا النموذج. لذلك يجب تعديل input constants في script وحفظ result CSV مع كل architecture review، بدل إعادة استخدام الجدول الحالي كحقيقة. أما كثافة Pulse/VPE على المضيف فصارت لها مرجعية مستقلة: measurement محلي سجل CPU pressure عند N=16، وhard tick overrun لأول مرة عند N=96؛ لا يُشتق منها 50,000 أو مليون جلسة ولا density تشغيلية آمنة.[5]
 
 ## عدم الاستدلال
 
@@ -70,3 +71,4 @@
 [2]: simulation-session-scaling-v0.1.md "Nexora Simulation Session Scaling"
 [3]: ../research/event-platform-comparison.md "Nexora: مقارنة منصة الأحداث"
 [4]: ../research/analytics-store-comparison.md "Nexora: مقارنة مخازن التحليلات ومسار lakehouse"
+[5]: pulse-one-host-capacity-benchmark-v0.1.md "قياس سعة Pulse/VPE على مضيف واحد v0.1"

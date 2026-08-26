@@ -1,0 +1,5 @@
+# Benchmark-only tooling. This file is not a Nexora VPE runtime dependency.
+# Install deliberately before running scripts/benchmark_pulse_session_capacity.py:
+#   python3 -m pip install -r requirements-benchmark.txt
+# psutil supplies process/system RSS, CPU, memory and disk-I/O observation.
+psutil==7.2.2
