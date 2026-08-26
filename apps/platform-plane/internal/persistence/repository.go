@@ -19,6 +19,7 @@ var (
 	ErrEventIntegrityConflict = errors.New("event integrity conflict")
 	ErrLeaseConflict          = errors.New("lease conflict")
 	ErrLeaseExpired           = errors.New("lease expired")
+	ErrLeaseStateNotEligible  = errors.New("session state is not lease eligible")
 	ErrStaleGeneration        = errors.New("stale generation")
 	ErrSessionNotFound        = errors.New("session not found")
 )
@@ -187,7 +188,8 @@ func (r *Repository) scanSession(row pgx.Row) (session.Session, error) {
 }
 
 func (r *Repository) ClaimLease(ctx context.Context, sessionID uuid.UUID, ownerID string, duration time.Duration) (session.LeaseClaimResult, error) {
-	if ownerID == "" || len(ownerID) > 128 || duration <= 0 {
+	leaseDurationMicros := duration.Microseconds()
+	if ownerID == "" || len(ownerID) > 128 || leaseDurationMicros <= 0 {
 		return session.LeaseClaimResult{}, ErrLeaseConflict
 	}
 	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
@@ -197,29 +199,35 @@ func (r *Repository) ClaimLease(ctx context.Context, sessionID uuid.UUID, ownerI
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	var currentGeneration int64
-	if err := tx.QueryRow(ctx, `SELECT generation FROM platform.sessions WHERE id = $1 FOR UPDATE`, sessionID).Scan(&currentGeneration); err != nil {
+	var currentState session.State
+	if err := tx.QueryRow(ctx, `SELECT generation, state FROM platform.sessions WHERE id = $1 FOR UPDATE`, sessionID).Scan(&currentGeneration, &currentState); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return session.LeaseClaimResult{}, ErrSessionNotFound
 		}
 		return session.LeaseClaimResult{}, fmt.Errorf("lock session for lease: %w", err)
 	}
+	if !currentState.LeaseEligible() {
+		return session.LeaseClaimResult{}, ErrLeaseStateNotEligible
+	}
 
 	var existing session.Lease
+	var existingLeaseActive bool
 	err = tx.QueryRow(ctx, `
-SELECT session_id, owner_id, lease_token, lease_generation, lease_expires_at, updated_at
-FROM platform.session_leases WHERE session_id = $1 FOR UPDATE`, sessionID).Scan(
-		&existing.SessionID, &existing.OwnerID, &existing.LeaseToken, &existing.LeaseGeneration, &existing.LeaseExpiresAt, &existing.UpdatedAt,
+	SELECT session_id, owner_id, lease_token, lease_generation, lease_expires_at, updated_at,
+	       lease_expires_at > clock_timestamp()
+	FROM platform.session_leases WHERE session_id = $1 FOR UPDATE`, sessionID).Scan(
+		&existing.SessionID, &existing.OwnerID, &existing.LeaseToken, &existing.LeaseGeneration, &existing.LeaseExpiresAt, &existing.UpdatedAt, &existingLeaseActive,
 	)
 	hasExisting := err == nil
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return session.LeaseClaimResult{}, fmt.Errorf("lock current lease: %w", err)
 	}
-	if hasExisting && existing.LeaseExpiresAt.After(time.Now().UTC()) {
+	if hasExisting && existingLeaseActive {
 		return session.LeaseClaimResult{}, ErrLeaseConflict
 	}
 
 	nextGeneration := currentGeneration + 1
-	if _, err := tx.Exec(ctx, `UPDATE platform.sessions SET generation = $2, future_worker_route = NULL, future_worker_route_generation = NULL, updated_at = now() WHERE id = $1`, sessionID, nextGeneration); err != nil {
+	if _, err := tx.Exec(ctx, `UPDATE platform.sessions SET generation = $2, future_worker_route = NULL, future_worker_route_generation = NULL, updated_at = clock_timestamp() WHERE id = $1`, sessionID, nextGeneration); err != nil {
 		return session.LeaseClaimResult{}, fmt.Errorf("advance session generation: %w", err)
 	}
 	lease := session.Lease{
@@ -227,19 +235,20 @@ FROM platform.session_leases WHERE session_id = $1 FOR UPDATE`, sessionID).Scan(
 		OwnerID:         ownerID,
 		LeaseToken:      uuid.New(),
 		LeaseGeneration: nextGeneration,
-		LeaseExpiresAt:  time.Now().UTC().Add(duration),
 	}
 	if hasExisting {
 		err = tx.QueryRow(ctx, `
-UPDATE platform.session_leases
-SET owner_id = $2, lease_token = $3, lease_generation = $4, lease_expires_at = $5, updated_at = now()
-WHERE session_id = $1
-RETURNING updated_at`, lease.SessionID, lease.OwnerID, lease.LeaseToken, lease.LeaseGeneration, lease.LeaseExpiresAt).Scan(&lease.UpdatedAt)
+	UPDATE platform.session_leases
+	SET owner_id = $2, lease_token = $3, lease_generation = $4,
+	    lease_expires_at = clock_timestamp() + ($5 * interval '1 microsecond'),
+	    updated_at = clock_timestamp()
+	WHERE session_id = $1
+	RETURNING lease_expires_at, updated_at`, lease.SessionID, lease.OwnerID, lease.LeaseToken, lease.LeaseGeneration, leaseDurationMicros).Scan(&lease.LeaseExpiresAt, &lease.UpdatedAt)
 	} else {
 		err = tx.QueryRow(ctx, `
-INSERT INTO platform.session_leases (session_id, owner_id, lease_token, lease_generation, lease_expires_at)
-VALUES ($1,$2,$3,$4,$5)
-RETURNING updated_at`, lease.SessionID, lease.OwnerID, lease.LeaseToken, lease.LeaseGeneration, lease.LeaseExpiresAt).Scan(&lease.UpdatedAt)
+	INSERT INTO platform.session_leases (session_id, owner_id, lease_token, lease_generation, lease_expires_at)
+	VALUES ($1,$2,$3,$4,clock_timestamp() + ($5 * interval '1 microsecond'))
+	RETURNING lease_expires_at, updated_at`, lease.SessionID, lease.OwnerID, lease.LeaseToken, lease.LeaseGeneration, leaseDurationMicros).Scan(&lease.LeaseExpiresAt, &lease.UpdatedAt)
 	}
 	if err != nil {
 		return session.LeaseClaimResult{}, fmt.Errorf("persist lease: %w", err)
@@ -251,19 +260,23 @@ RETURNING updated_at`, lease.SessionID, lease.OwnerID, lease.LeaseToken, lease.L
 }
 
 func (r *Repository) RenewLease(ctx context.Context, lease session.Lease, duration time.Duration) (session.Lease, error) {
-	if duration <= 0 {
+	leaseDurationMicros := duration.Microseconds()
+	if leaseDurationMicros <= 0 {
 		return session.Lease{}, ErrLeaseConflict
 	}
-	lease.LeaseExpiresAt = time.Now().UTC().Add(duration)
 	err := r.pool.QueryRow(ctx, `
-UPDATE platform.session_leases
-SET lease_expires_at = $5, updated_at = now()
-WHERE session_id = $1
-  AND owner_id = $2
-  AND lease_token = $3
-  AND lease_generation = $4
-  AND lease_expires_at > now()
-RETURNING updated_at`, lease.SessionID, lease.OwnerID, lease.LeaseToken, lease.LeaseGeneration, lease.LeaseExpiresAt).Scan(&lease.UpdatedAt)
+	UPDATE platform.session_leases AS l
+	SET lease_expires_at = clock_timestamp() + ($5 * interval '1 microsecond'),
+	    updated_at = clock_timestamp()
+	FROM platform.sessions AS s
+	WHERE l.session_id = $1
+	  AND l.session_id = s.id
+	  AND s.state = 'PENDING_WORKER'
+	  AND l.owner_id = $2
+	  AND l.lease_token = $3
+	  AND l.lease_generation = $4
+	  AND l.lease_expires_at > clock_timestamp()
+	RETURNING l.lease_expires_at, l.updated_at`, lease.SessionID, lease.OwnerID, lease.LeaseToken, lease.LeaseGeneration, leaseDurationMicros).Scan(&lease.LeaseExpiresAt, &lease.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return session.Lease{}, r.leaseMiss(ctx, lease)
 	}
@@ -279,9 +292,11 @@ func (r *Repository) SetFutureWorkerRoute(ctx context.Context, lease session.Lea
 	}
 	commandTag, err := r.pool.Exec(ctx, `
 UPDATE platform.sessions AS s
-SET future_worker_route = $5, future_worker_route_generation = $4, updated_at = now()
-WHERE s.id = $1
-  AND s.generation = $4
+SET future_worker_route = $5, future_worker_route_generation = $4, updated_at = clock_timestamp()
+	WHERE s.id = $1
+	  AND s.state = 'PENDING_WORKER'
+	  AND s.generation = $4
+
   AND EXISTS (
       SELECT 1 FROM platform.session_leases AS l
       WHERE l.session_id = s.id
@@ -300,9 +315,23 @@ WHERE s.id = $1
 }
 
 func (r *Repository) leaseMiss(ctx context.Context, lease session.Lease) error {
-	var expiresAt time.Time
-	err := r.pool.QueryRow(ctx, `SELECT lease_expires_at FROM platform.session_leases WHERE session_id = $1`, lease.SessionID).Scan(&expiresAt)
-	if errors.Is(err, pgx.ErrNoRows) || (!expiresAt.After(time.Now().UTC())) {
+	var state session.State
+	var leaseActive bool
+	err := r.pool.QueryRow(ctx, `
+	SELECT s.state, COALESCE(l.lease_expires_at > clock_timestamp(), false)
+	FROM platform.sessions AS s
+	LEFT JOIN platform.session_leases AS l ON l.session_id = s.id
+	WHERE s.id = $1`, lease.SessionID).Scan(&state, &leaseActive)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrLeaseExpired
+	}
+	if err != nil {
+		return fmt.Errorf("inspect lease miss: %w", err)
+	}
+	if !state.LeaseEligible() {
+		return ErrLeaseStateNotEligible
+	}
+	if !leaseActive {
 		return ErrLeaseExpired
 	}
 	return ErrStaleGeneration

@@ -17,6 +17,7 @@ import (
 	"github.com/mohammedtaha-ai/noxora_test/apps/platform-plane/internal/contracts"
 	"github.com/mohammedtaha-ai/noxora_test/apps/platform-plane/internal/persistence"
 	"github.com/mohammedtaha-ai/noxora_test/apps/platform-plane/internal/session"
+	"github.com/mohammedtaha-ai/noxora_test/apps/platform-plane/internal/testsupport"
 )
 
 func TestPostgresAllocationDeduplicatesAndFencesConflicts(t *testing.T) {
@@ -96,6 +97,7 @@ func TestPostgresLeaseRaceExpiryReclaimAndStaleFencing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("allocate session: %v", err)
 	}
+	setSessionState(t, pool, allocation.Session.ID, session.StatePendingWorker)
 
 	owners := []string{"allocator-a", "allocator-b"}
 	start := make(chan struct{})
@@ -136,7 +138,13 @@ func TestPostgresLeaseRaceExpiryReclaimAndStaleFencing(t *testing.T) {
 	); err != nil {
 		t.Fatalf("load old lease: %v", err)
 	}
-	time.Sleep(80 * time.Millisecond)
+	if _, err := pool.Exec(context.Background(), `
+		UPDATE platform.session_leases
+		SET updated_at = clock_timestamp() - interval '1 hour',
+		    lease_expires_at = clock_timestamp() - interval '1 microsecond'
+		WHERE session_id = $1`, allocation.Session.ID); err != nil {
+		t.Fatalf("force lease expiry on PostgreSQL clock: %v", err)
+	}
 	newClaim, err := repository.ClaimLease(context.Background(), allocation.Session.ID, "allocator-reclaimer", time.Second)
 	if err != nil {
 		t.Fatalf("reclaim expired lease: %v", err)
@@ -155,12 +163,40 @@ func TestPostgresLeaseRaceExpiryReclaimAndStaleFencing(t *testing.T) {
 	}
 }
 
+func TestPostgresTerminalSessionsRejectLeaseAndRouteOwnership(t *testing.T) {
+	repository, pool := newIntegrationRepository(t)
+	allocation, err := repository.Allocate(context.Background(), validEvent(t))
+	if err != nil {
+		t.Fatalf("allocate session: %v", err)
+	}
+
+	for _, terminal := range []session.State{session.StateFailed, session.StateCancelled} {
+		t.Run(string(terminal), func(t *testing.T) {
+			setSessionState(t, pool, allocation.Session.ID, terminal)
+			if _, err := repository.ClaimLease(context.Background(), allocation.Session.ID, "terminal-owner", time.Second); !errors.Is(err, persistence.ErrLeaseStateNotEligible) {
+				t.Fatalf("ClaimLease() error = %v, want terminal-state rejection", err)
+			}
+			forgedLease := session.Lease{SessionID: allocation.Session.ID, OwnerID: "terminal-owner", LeaseToken: uuid.New(), LeaseGeneration: 1}
+			if _, err := repository.RenewLease(context.Background(), forgedLease, time.Second); !errors.Is(err, persistence.ErrLeaseStateNotEligible) {
+				t.Fatalf("RenewLease() error = %v, want terminal-state rejection", err)
+			}
+			if err := repository.SetFutureWorkerRoute(context.Background(), forgedLease, "future://terminal"); !errors.Is(err, persistence.ErrLeaseStateNotEligible) {
+				t.Fatalf("SetFutureWorkerRoute() error = %v, want terminal-state rejection", err)
+			}
+		})
+	}
+}
+
+func setSessionState(t *testing.T, pool *pgxpool.Pool, sessionID uuid.UUID, state session.State) {
+	t.Helper()
+	if _, err := pool.Exec(context.Background(), `UPDATE platform.sessions SET state = $2, updated_at = clock_timestamp() WHERE id = $1`, sessionID, state); err != nil {
+		t.Fatalf("set session state %s: %v", state, err)
+	}
+}
+
 func newIntegrationRepository(t *testing.T) (*persistence.Repository, *pgxpool.Pool) {
 	t.Helper()
-	databaseURL := os.Getenv("PLATFORM_TEST_DATABASE_URL")
-	if databaseURL == "" {
-		databaseURL = "postgres://nexora_control:nexora_control_local_only@127.0.0.1:5432/nexora_control_plane_test?sslmode=disable"
-	}
+	databaseURL := testsupport.TestDatabaseURL()
 	poolConfig, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
 		t.Fatalf("parse test database URL: %v", err)
@@ -170,10 +206,10 @@ func newIntegrationRepository(t *testing.T) (*persistence.Repository, *pgxpool.P
 	if err != nil {
 		t.Fatalf("open test pool: %v", err)
 	}
-	cleanupPlatformSchema(t, pool)
+	cleanupPlatformSchema(t, databaseURL, pool)
 	migratePlatform(t, databaseURL)
 	t.Cleanup(func() {
-		cleanupPlatformSchema(t, pool)
+		cleanupPlatformSchema(t, databaseURL, pool)
 		pool.Close()
 	})
 	return persistence.New(pool), pool
@@ -199,10 +235,10 @@ func migratePlatform(t *testing.T, databaseURL string) {
 	}
 }
 
-func cleanupPlatformSchema(t *testing.T, pool *pgxpool.Pool) {
+func cleanupPlatformSchema(t *testing.T, databaseURL string, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), "DROP SCHEMA IF EXISTS platform CASCADE"); err != nil {
-		t.Fatalf("drop platform schema: %v", err)
+	if err := testsupport.ResetPlatformSchema(context.Background(), databaseURL, pool); err != nil {
+		t.Fatalf("reset platform schema: %v", err)
 	}
 }
 

@@ -18,6 +18,7 @@ import (
 	"github.com/mohammedtaha-ai/noxora_test/apps/platform-plane/internal/ingestion"
 	"github.com/mohammedtaha-ai/noxora_test/apps/platform-plane/internal/observability"
 	"github.com/mohammedtaha-ai/noxora_test/apps/platform-plane/internal/persistence"
+	"github.com/mohammedtaha-ai/noxora_test/apps/platform-plane/internal/testsupport"
 	"github.com/mohammedtaha-ai/noxora_test/apps/platform-plane/internal/transport"
 )
 
@@ -75,10 +76,7 @@ func TestLoopbackAdapterRejectsMalformedAndOversizedIngress(t *testing.T) {
 
 func newAdapter(t *testing.T, maxEventBytes int64) (*transport.HTTPAdapter, func()) {
 	t.Helper()
-	databaseURL := os.Getenv("PLATFORM_TEST_DATABASE_URL")
-	if databaseURL == "" {
-		databaseURL = "postgres://nexora_control:nexora_control_local_only@127.0.0.1:5432/nexora_control_plane_test?sslmode=disable"
-	}
+	databaseURL := testsupport.TestDatabaseURL()
 	poolConfig, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
 		t.Fatalf("parse test database URL: %v", err)
@@ -87,9 +85,9 @@ func newAdapter(t *testing.T, maxEventBytes int64) (*transport.HTTPAdapter, func
 	if err != nil {
 		t.Fatalf("open test pool: %v", err)
 	}
-	if _, err := pool.Exec(context.Background(), "DROP SCHEMA IF EXISTS platform CASCADE"); err != nil {
+	if err := testsupport.ResetPlatformSchema(context.Background(), databaseURL, pool); err != nil {
 		pool.Close()
-		t.Fatalf("drop platform schema: %v", err)
+		t.Fatalf("reset platform schema: %v", err)
 	}
 	applyMigrations(t, databaseURL)
 	validator, err := contracts.Load(repositoryRoot(t))
@@ -100,7 +98,9 @@ func newAdapter(t *testing.T, maxEventBytes int64) (*transport.HTTPAdapter, func
 	repository := persistence.New(pool)
 	service := ingestion.NewService(validator, repository, observability.New("error"))
 	return transport.NewHTTPAdapter(service, repository, maxEventBytes), func() {
-		_, _ = pool.Exec(context.Background(), "DROP SCHEMA IF EXISTS platform CASCADE")
+		if err := testsupport.ResetPlatformSchema(context.Background(), databaseURL, pool); err != nil {
+			t.Errorf("reset platform schema during cleanup: %v", err)
+		}
 		pool.Close()
 	}
 }

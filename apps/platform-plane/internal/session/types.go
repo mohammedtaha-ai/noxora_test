@@ -15,6 +15,10 @@ const (
 	StateCancelled     State = "CANCELLED"
 )
 
+func (s State) LeaseEligible() bool {
+	return s == StatePendingWorker
+}
+
 func (s State) CanTransitionTo(next State) bool {
 	switch s {
 	case StateRequested:
