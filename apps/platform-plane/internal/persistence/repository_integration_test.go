@@ -237,6 +237,11 @@ func TestPostgresTerminalSessionsRejectLeaseAndRouteOwnership(t *testing.T) {
 			if err := repository.SetFutureWorkerRoute(context.Background(), forgedLease, "future://terminal"); !errors.Is(err, persistence.ErrLeaseStateNotEligible) {
 				t.Fatalf("SetFutureWorkerRoute() error = %v, want terminal-state rejection", err)
 			}
+			if _, err := pool.Exec(context.Background(), `
+				INSERT INTO platform.session_leases (session_id, owner_id, lease_token, lease_generation, lease_expires_at)
+				VALUES ($1, 'bypass-attempt', $2, 1, clock_timestamp() + interval '1 minute')`, allocation.Session.ID, uuid.New()); err == nil {
+				t.Fatal("PostgreSQL trigger accepted a lease for a terminal session")
+			}
 		})
 	}
 }
