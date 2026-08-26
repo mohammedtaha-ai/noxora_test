@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from .model import Event, EventType, Snapshot
+from .model import SCHEMA_VERSION, Event, EventType, Snapshot
 
 _ALLOWED_ACTORS = {"learner", "runtime", "scenario", "system"}
 _ALLOWED_SOURCES = {"vpe_core", "physiology_adapter", "scenario_runtime", "future_fast_resolver"}
@@ -16,7 +16,7 @@ def validate_event_actor(actor: object) -> None:
 
 
 def validate_event(event: Event) -> None:
-    if event.schema_version != "1.0":
+    if event.schema_version != SCHEMA_VERSION:
         raise ValueError("Unsupported event schema version")
     if not event.event_id or not event.scenario_id:
         raise ValueError("Event requires stable event_id and scenario_id")

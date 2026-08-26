@@ -160,7 +160,7 @@ class VpeClientFacade:
             # A side effect may already have reached Pulse. Freeze clinical time
             # until an explicit reconciliation/recovery decision is made.
             if self.runtime.state.value == "RUNNING":
-                self.runtime.pause_by_system()
+                self.runtime.pause_by_system("ambiguous_command_outcome")
             return (outcome,)
         outcomes: list[CommandOutcome] = []
         for request_id in tuple(self._command_ids):

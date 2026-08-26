@@ -30,13 +30,13 @@
         "snapshot.published",
         "checkpoint.created",
         "checkpoint.restored",
-        "fast.acquisition.recorded",
-        "escalation.recorded"
+        "escalation.recorded",
+        "runtime.paused_by_system"
       ]
     },
     "actor": { "type": "string", "enum": ["learner", "runtime", "scenario", "system"] },
     "payload": { "type": "object" },
     "source": { "type": "string", "enum": ["vpe_core", "physiology_adapter", "scenario_runtime", "future_fast_resolver"] },
-    "schema_version": { "type": "string", "const": "1.0" }
+    "schema_version": { "type": "string", "const": "1.1" }
   }
 }

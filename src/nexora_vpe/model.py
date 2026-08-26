@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Mapping
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 
 
 class RuntimeState(str, Enum):
@@ -35,8 +35,8 @@ class EventType(str, Enum):
     SNAPSHOT_PUBLISHED = "snapshot.published"
     CHECKPOINT_CREATED = "checkpoint.created"
     CHECKPOINT_RESTORED = "checkpoint.restored"
-    FAST_ACQUISITION_RECORDED = "fast.acquisition.recorded"
     ESCALATION_RECORDED = "escalation.recorded"
+    RUNTIME_PAUSED_BY_SYSTEM = "runtime.paused_by_system"
 
 
 @dataclass(frozen=True)

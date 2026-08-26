@@ -1,0 +1,133 @@
+{
+  "benchmark": "pulse_vpe_regression_replay_v0.1",
+  "byte_identical_recorded_sessions": true,
+  "byte_identical_timelines": true,
+  "conclusion": "reproducible_within_declared_tolerance",
+  "declared_tolerance": 1e-09,
+  "inputs": {
+    "commands": [
+      {
+        "actor": "learner",
+        "kind": "record_history_intent",
+        "payload": {
+          "intent_id": "PAIN_ONSET"
+        }
+      },
+      {
+        "actor": "learner",
+        "kind": "record_history_intent",
+        "payload": {
+          "intent_id": "PAIN_LOCATION"
+        }
+      },
+      {
+        "actor": "learner",
+        "kind": "record_history_intent",
+        "payload": {
+          "intent_id": "MECHANISM_OF_INJURY"
+        }
+      },
+      {
+        "actor": "learner",
+        "kind": "request_observation",
+        "payload": {
+          "observation_id": "VITALS"
+        }
+      },
+      {
+        "actor": "learner",
+        "kind": "record_clinical_hypothesis",
+        "payload": {
+          "hypothesis_id": "INTERNAL_BLEEDING"
+        }
+      },
+      {
+        "actor": "learner",
+        "kind": "request_observation",
+        "payload": {
+          "observation_id": "FAST"
+        }
+      },
+      {
+        "actor": "runtime",
+        "kind": "advance_time",
+        "payload": {
+          "duration_s": 60.0
+        }
+      },
+      {
+        "actor": "learner",
+        "kind": "apply_intervention",
+        "payload": {
+          "intervention_id": "crystalloid_saline"
+        }
+      },
+      {
+        "actor": "runtime",
+        "kind": "advance_time",
+        "payload": {
+          "duration_s": 60.0
+        }
+      },
+      {
+        "actor": "learner",
+        "kind": "request_observation",
+        "payload": {
+          "observation_id": "VITALS"
+        }
+      },
+      {
+        "actor": "learner",
+        "kind": "record_escalation",
+        "payload": {
+          "escalation_id": "trauma_team_escalation"
+        }
+      }
+    ],
+    "initial_state_path": "/home/ubuntu/pulse-build/install/bin/states/StandardMale@0s.json",
+    "initial_state_sha256": "f30f7fbb2167f61c7fbe31dc1eab4714e07b80e6c319176dbfeb13f574133b18",
+    "pulse_revision": "e8a36497b8ba78e788dc201a6baf74e1c297c56f",
+    "pulse_root": "/home/ubuntu/pulse-build/install",
+    "scenario_path": "/home/ubuntu/noxora_test/scenarios/trauma_splenic_01.json",
+    "scenario_sha256": "ffeb09ceaf0904bb01e6423ae039d5c71cea3e415e8e9cbf2dae634007a91bbb",
+    "vpe_time_owner": true
+  },
+  "limitations": [
+    "Local one-host engineering evidence only; no Unity, network, broker, cloud, or clinical validation.",
+    "This harness reports reproducibility for one pinned input set; it does not claim determinism across scenarios, hosts, operating systems, or Pulse revisions."
+  ],
+  "measured_at_utc": "2026-08-26T21:11:01.957979+00:00",
+  "runs": 5,
+  "trajectory_comparison": {
+    "channels": {
+      "blood_volume_ml": {
+        "comparisons": 16,
+        "max_abs_divergence": 0.0,
+        "within_tolerance": true
+      },
+      "heart_rate_bpm": {
+        "comparisons": 16,
+        "max_abs_divergence": 0.0,
+        "within_tolerance": true
+      },
+      "mean_arterial_pressure_mmhg": {
+        "comparisons": 16,
+        "max_abs_divergence": 0.0,
+        "within_tolerance": true
+      },
+      "oxygen_saturation": {
+        "comparisons": 16,
+        "max_abs_divergence": 0.0,
+        "within_tolerance": true
+      },
+      "total_hemorrhaged_volume_ml": {
+        "comparisons": 16,
+        "max_abs_divergence": 0.0,
+        "within_tolerance": true
+      }
+    },
+    "comparable": true,
+    "reason": null
+  },
+  "within_declared_tolerance": true
+}

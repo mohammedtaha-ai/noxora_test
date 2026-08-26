@@ -108,11 +108,19 @@ class VpeRuntime:
                 self._request_outcomes[command.request_id] = self.evidence.events()[event_index:]
         return self.evidence.events()[starting_index:]
 
-    def pause_by_system(self) -> None:
-        """Pause simulation time because the host cannot safely execute a tick."""
+    def pause_by_system(self, reason: str = "system_safety_pause") -> None:
+        """Pause clinical time and record the operational boundary in canonical evidence."""
         if self.state != RuntimeState.RUNNING:
             raise RuntimeError("Only a running scenario may be paused by the system")
+        if not isinstance(reason, str) or not reason:
+            raise ValueError("System pause reason must be a non-empty string")
         self.state = RuntimeState.PAUSED_BY_SYSTEM
+        self._emit(
+            EventType.RUNTIME_PAUSED_BY_SYSTEM,
+            actor="system",
+            source="vpe_core",
+            payload={"reason": reason},
+        )
 
     def resume_from_system_pause(self) -> None:
         """Resume only an explicit system pause; elapsed wall time is not replayed."""

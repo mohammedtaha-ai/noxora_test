@@ -89,7 +89,7 @@ class VpePacedHost:
             # Do not move clinical time again after a host/engine failure.  The
             # caller may inspect the state and explicitly resume only if safe.
             if self.runtime.state == RuntimeState.RUNNING:
-                self.runtime.pause_by_system()
+                self.runtime.pause_by_system("host_tick_failure")
             raise
         elapsed = self.monotonic() - started
         remaining = self.tick_simulation_s - elapsed

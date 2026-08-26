@@ -13,6 +13,18 @@ from .pulse_adapter import PulseAdapter, PulseAdapterConfig, PulseAdapterError
 from .client_facade import VpeClientFacade
 from .local_transport import LocalFacadeHttpServer
 from .host import TickResult, VpePacedHost
+from .evidence_evaluator import EvaluationResult, EvidenceFinding, FindingStatus, evaluate_evidence, serialize_evaluation
+from .replay import (
+    CanonicalTimeline,
+    RecordedSession,
+    TimelineEntry,
+    canonical_timeline,
+    evaluate_recording,
+    record_session,
+    recorded_session_from_dict,
+    serialize_recorded_session,
+    serialize_timeline,
+)
 from .client_contracts import (
     ClientCommandStatus,
     ClientError,
@@ -39,6 +51,20 @@ __all__ = [
     "LocalFacadeHttpServer",
     "TickResult",
     "VpePacedHost",
+    "EvaluationResult",
+    "EvidenceFinding",
+    "FindingStatus",
+    "evaluate_evidence",
+    "serialize_evaluation",
+    "CanonicalTimeline",
+    "RecordedSession",
+    "TimelineEntry",
+    "canonical_timeline",
+    "evaluate_recording",
+    "record_session",
+    "recorded_session_from_dict",
+    "serialize_recorded_session",
+    "serialize_timeline",
     "ClientCommandStatus",
     "ClientError",
     "ClientErrorCode",
